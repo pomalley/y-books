@@ -12,6 +12,7 @@
         clickable
         v-ripple
         class="row justify-start"
+        @click="itemClick(book.row)"
       >
         <q-item-section class="col-4">
           {{ book.title }}
@@ -29,41 +30,31 @@
         </q-item-section>
       </q-item>
     </q-list>
+    <book-card v-model="state.bookCardModel" />
   </q-page>
 </template>
 
 <script setup lang="ts">
 import { onMounted, reactive } from 'vue';
+import BookCard from 'components/BookCard.vue';
+import { Book, BookCardModel } from 'components/models';
+import { API_KEY, CLIENT_ID } from '../keys';
 
 defineProps<{
   msg: string;
 }>();
 
-interface Book {
-  row: number;
-  title: string;
-  authors: string;
-  year?: number;
-  genres: string;
-  wantToRead: boolean;
-  read: boolean;
-  wantToOwn: boolean;
-  owned: boolean;
-  imageUrl: string;
-  dateRead: string;
-  googleBooksId: string;
-  hidden: boolean;
-  comments: string;
-  createdTimestamp: number;
-  updatedTimestamp: number;
-}
-
 interface State {
   signedIn: boolean;
   error?: string;
   books: Book[];
+  bookCardModel: BookCardModel;
 }
-const state: State = reactive({ signedIn: false, books: [] });
+const state: State = reactive({
+  signedIn: false,
+  books: [],
+  bookCardModel: { active: false },
+});
 
 onMounted(() => {
   var gapiscript = document.createElement('script');
@@ -72,18 +63,22 @@ onMounted(() => {
   document.head.appendChild(gapiscript);
 });
 
-const CLIENT_ID =
-  '738811460084-oe6gaoo2orh67ihf3t8b7vkg7tqib679.apps.googleusercontent.com';
-const API_KEY = 'AIzaSyCRy2YrjIUcQ-5dhqihPy3vmK28oBcCSvU';
-
 // Array of API discovery doc URLs for APIs used by the quickstart
-var DISCOVERY_DOCS = [
+const DISCOVERY_DOCS = [
   'https://sheets.googleapis.com/$discovery/rest?version=v4',
 ];
 
 // Authorization scopes required by the API; multiple scopes can be
 // included, separated by spaces.
-var SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+
+// First book in state.books (index 0) has row number ROW_OFFSET in the sheet.
+const ROW_OFFSET = 2;
+
+function itemClick(row: number) {
+  state.bookCardModel.active = true;
+  state.bookCardModel.book = state.books[row - ROW_OFFSET];
+}
 
 function readIcon(b: Book): string {
   if (b.wantToRead) {
@@ -205,7 +200,7 @@ function listMajors() {
       function (response) {
         var range = response.result;
         if (range.values && range.values.length > 0) {
-          state.books = parseBooks(range.values as string[][], 2);
+          state.books = parseBooks(range.values as string[][], ROW_OFFSET);
           state.error = undefined;
         } else {
           state.error = 'no data found';

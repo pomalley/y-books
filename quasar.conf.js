@@ -40,7 +40,7 @@ module.exports = configure(function (ctx) {
       'fontawesome-v5',
       // 'eva-icons',
       // 'themify',
-      // 'line-awesome',
+      'line-awesome',
       // 'roboto-font-latin-ext', // this or either 'roboto-font', NEVER both!
 
       'roboto-font', // optional, you are not bound to it
@@ -81,7 +81,7 @@ module.exports = configure(function (ctx) {
         type: 'http',
       },
       port: 3000,
-      open: true, // opens browser window automatically
+      open: false, // opens browser window automatically
     },
 
     // https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-framework
