@@ -76,9 +76,17 @@
           />
         </q-card-section>
       </q-card-section>
-      <!-- <q-card-actions align="right">
-        <q-btn v-close-popup color="primary" label="OK" @click="yeah('ok')" />
-      </q-card-actions> -->
+      <q-card-section horizontal>
+        <q-card-section class="col-6 q-pa-none text-center text-caption">
+          Created: {{ displayTimestamp(modelValue.book?.createdTimestamp) }}
+        </q-card-section>
+        <q-card-section class="col-6 q-pa-none text-center text-caption">
+          Updated: {{ displayTimestamp(modelValue.book?.updatedTimestamp) }}
+        </q-card-section>
+      </q-card-section>
+      <q-card-actions align="center">
+        <q-btn v-close-popup color="primary" label="OK" />
+      </q-card-actions>
     </q-card>
   </q-dialog>
 </template>
@@ -118,6 +126,14 @@ function updateCell(row: number, col: ColumnName, value: string) {
         emit('update:modelValue', newModel);
         console.log('Update successful: ', response);
         updating[col] = false;
+        // set updated timestamp as well (but only once).
+        if (col != ColumnName.UPDATED_TIMESTAMP) {
+          updateCell(
+            row,
+            ColumnName.UPDATED_TIMESTAMP,
+            String(Math.round(Date.now() / 1000))
+          );
+        }
       },
       (response) => {
         console.log('Update failed: ', response);
@@ -186,6 +202,12 @@ function iconText(type: ColumnName): string {
     default:
       return 'Uh Oh!';
   }
+}
+
+function displayTimestamp(timestamp?: number): string {
+  if (!timestamp) return '';
+  const date = new Date(timestamp * 1000);
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
 }
 
 function formattedDateRead(): string {
