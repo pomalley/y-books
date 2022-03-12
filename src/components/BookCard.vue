@@ -20,22 +20,26 @@
             :updating="updating[ColumnName.TITLE]"
             :text="modelValue.book?.title || ''"
             @edit="(value) => updateText(ColumnName.TITLE, value)"
+            empty-text="[no title]"
           />
           <edit-string-card-section
             :updating="updating[ColumnName.AUTHORS]"
             :text="modelValue.book?.authors || ''"
             @edit="(value) => updateText(ColumnName.AUTHORS, value)"
+            empty-text="[no authors]"
           />
           <edit-string-card-section
             year
             :updating="updating[ColumnName.YEAR]"
             :text="String(modelValue.book?.year)"
             @edit="(value) => updateText(ColumnName.YEAR, value)"
+            empty-text="[no year]"
           />
           <edit-string-card-section
             :updating="updating[ColumnName.GENRES]"
             :text="modelValue.book?.genres || ''"
             @edit="(value) => updateText(ColumnName.GENRES, value)"
+            empty-text="no genres"
           />
           <edit-string-card-section
             year-month
@@ -43,6 +47,7 @@
             :text="modelValue.book?.dateRead || ''"
             @edit="(value) => updateText(ColumnName.DATE_READ, value)"
             :display-text="formattedDateRead()"
+            empty-text="[no date read]"
           />
           <q-card-section>
             <q-icon
@@ -63,9 +68,12 @@
             </q-icon>
           </q-card-section>
           <q-separator inset />
-          <q-card-section>
-            {{ modelValue.book?.comments }}
-          </q-card-section>
+          <edit-string-card-section
+            :updating="updating[ColumnName.COMMENTS]"
+            :text="modelValue.book?.comments || ''"
+            @edit="(value) => updateText(ColumnName.COMMENTS, value)"
+            empty-text="[no comment]"
+          />
         </q-card-section>
       </q-card-section>
       <!-- <q-card-actions align="right">
@@ -182,12 +190,12 @@ function iconText(type: ColumnName): string {
 
 function formattedDateRead(): string {
   if (!props.modelValue.book?.dateRead) {
-    return 'no date';
+    return '';
   }
   const regex = /(\d\d\d\d)-(\d\d)/;
   const matches = regex.exec(props.modelValue.book.dateRead);
   if (!matches || matches.length < 3) {
-    return 'No read date';
+    return '';
   }
   return `Read ${numToMonth(+matches[2])} ${matches[1]}`;
 }

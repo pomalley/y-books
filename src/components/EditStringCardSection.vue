@@ -1,6 +1,6 @@
 <template>
   <q-card-section :class="classObject">
-    {{ displayText || text }}
+    {{ displayText || text || emptyText || '' }}
     <q-popup-edit
       auto-save
       :model-value="text"
@@ -33,6 +33,7 @@ const props = defineProps<{
   year?: boolean;
   yearMonth?: boolean;
   displayText?: string;
+  emptyText?: string;
 }>();
 
 const classObject = computed(() => ({
