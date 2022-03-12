@@ -2,7 +2,6 @@
   <!-- notice dialogRef here -->
   <q-dialog
     ref="dialogRef"
-    @hide="yeah('hide')"
     :model-value="modelValue.active"
     @update:model-value="
       (value) =>
@@ -17,36 +16,51 @@
           class="col-4"
         />
         <q-card-section class="col-8">
-          <q-card-section>{{ modelValue.book?.title }}</q-card-section>
-          <q-card-section>{{ modelValue.book?.authors }}</q-card-section>
-          <q-card-section>{{ modelValue.book?.year }}</q-card-section>
-          <q-card-section>{{ modelValue.book?.genres }}</q-card-section>
-          <q-card-section>{{ formattedDateRead() }}</q-card-section>
+          <edit-string-card-section
+            :updating="updating[ColumnName.TITLE]"
+            :text="modelValue.book?.title || ''"
+            @edit="(value) => updateText(ColumnName.TITLE, value)"
+          />
+          <edit-string-card-section
+            :updating="updating[ColumnName.AUTHORS]"
+            :text="modelValue.book?.authors || ''"
+            @edit="(value) => updateText(ColumnName.AUTHORS, value)"
+          />
+          <edit-string-card-section
+            year
+            :updating="updating[ColumnName.YEAR]"
+            :text="String(modelValue.book?.year)"
+            @edit="(value) => updateText(ColumnName.YEAR, value)"
+          />
+          <edit-string-card-section
+            :updating="updating[ColumnName.GENRES]"
+            :text="modelValue.book?.genres || ''"
+            @edit="(value) => updateText(ColumnName.GENRES, value)"
+          />
+          <edit-string-card-section
+            year-month
+            :updating="updating[ColumnName.DATE_READ]"
+            :text="modelValue.book?.dateRead || ''"
+            @edit="(value) => updateText(ColumnName.DATE_READ, value)"
+            :display-text="formattedDateRead()"
+          />
           <q-card-section>
-            <q-icon :name="iconName(IconType.READ)" size="md">
-              <q-tooltip class="text-body2">{{
-                iconText(IconType.READ)
-              }}</q-tooltip>
+            <q-icon
+              v-for="colName in [
+                ColumnName.READ,
+                ColumnName.WANT_TO_READ,
+                ColumnName.OWNED,
+                ColumnName.WANT_TO_OWN,
+              ]"
+              :key="colName"
+              :name="iconName(colName)"
+              size="md"
+              @click="iconClick(colName)"
+              class="q-px-sm cursor-pointer"
+              :class="{ disabled: updating[colName] }"
+            >
+              <q-tooltip class="text-body2">{{ iconText(colName) }}</q-tooltip>
             </q-icon>
-            <q-icon name="none" />
-            <q-icon :name="iconName(IconType.WANT_TO_READ)" size="md">
-              <q-tooltip class="text-body2">{{
-                iconText(IconType.WANT_TO_READ)
-              }}</q-tooltip>
-            </q-icon>
-            <q-icon name="none" />
-            <q-icon :name="iconName(IconType.OWNED)" size="md">
-              <q-tooltip class="text-body2">{{
-                iconText(IconType.OWNED)
-              }}</q-tooltip>
-            </q-icon>
-            <q-icon name="none" />
-            <q-icon :name="iconName(IconType.WANT_TO_OWN)" size="md">
-              <q-tooltip class="text-body2">{{
-                iconText(IconType.WANT_TO_OWN)
-              }}</q-tooltip>
-            </q-icon>
-            <q-icon name="none" />
           </q-card-section>
           <q-separator inset />
           <q-card-section>
@@ -62,57 +76,102 @@
 </template>
 
 <script setup lang="ts">
-import { defineEmits } from 'vue';
-import { BookCardModel } from 'components/models';
-
-enum IconType {
-  READ,
-  WANT_TO_READ,
-  OWNED,
-  WANT_TO_OWN,
-}
+import { defineEmits, reactive } from 'vue';
+import { BookCardModel, ColumnName } from 'components/models';
+import EditStringCardSection from 'components/EditStringCardSection.vue';
 
 const props = defineProps<{
-  // book: Book;
+  sheetId: string;
   modelValue: BookCardModel;
 }>();
 
+const updating: Record<string, boolean> = reactive({});
+
 const emit = defineEmits(['update:modelValue']);
 
-function yeah(msg: string) {
-  console.log(msg);
+function updateText(col: ColumnName, value: string) {
+  if (!props.modelValue.book?.row) return;
+  updateCell(props.modelValue.book.row, col, value);
 }
 
-function iconName(type: IconType): string {
+function updateCell(row: number, col: ColumnName, value: string) {
+  updating[col] = true;
+  gapi.client.sheets.spreadsheets.values
+    .update({
+      spreadsheetId: props.sheetId,
+      range: `${String(col)}${row}`,
+      resource: { values: [[value]] },
+      valueInputOption: 'USER_ENTERED',
+    })
+    .then(
+      (response) => {
+        const newModel = { ...props.modelValue };
+        newModel.book?.update(col, value);
+        emit('update:modelValue', newModel);
+        console.log('Update successful: ', response);
+        updating[col] = false;
+      },
+      (response) => {
+        console.log('Update failed: ', response);
+        updating[col] = false;
+      }
+    );
+}
+
+function iconClick(type: ColumnName) {
+  if (!props.modelValue.book?.row) return;
+  let newValue = '';
   switch (type) {
-    case IconType.READ:
+    case ColumnName.READ:
+      newValue = props.modelValue.book.read ? 'FALSE' : 'TRUE';
+      break;
+    case ColumnName.WANT_TO_READ:
+      newValue = props.modelValue.book.wantToRead ? 'FALSE' : 'TRUE';
+      break;
+    case ColumnName.OWNED:
+      newValue = props.modelValue.book.owned ? 'FALSE' : 'TRUE';
+      break;
+    case ColumnName.WANT_TO_OWN:
+      newValue = props.modelValue.book.wantToOwn ? 'FALSE' : 'TRUE';
+      break;
+    default:
+      console.log('Bad iconClick arg: ', type);
+      return;
+  }
+  updating[type] = true;
+  updateCell(props.modelValue.book.row, type, newValue);
+}
+
+function iconName(type: ColumnName): string {
+  switch (type) {
+    case ColumnName.READ:
       return props.modelValue.book?.read ? 'fas fa-check' : 'la la-times';
-    case IconType.WANT_TO_READ:
+    case ColumnName.WANT_TO_READ:
       return props.modelValue.book?.wantToRead
         ? 'fas fa-book-open'
         : 'la la-book-open';
-    case IconType.OWNED:
+    case ColumnName.OWNED:
       return props.modelValue.book?.owned
         ? 'fas fa-book-medical'
         : 'la la-book-medical';
-    case IconType.WANT_TO_OWN:
+    case ColumnName.WANT_TO_OWN:
       return props.modelValue.book?.wantToOwn ? 'fas fa-coins' : 'la la-coins';
     default:
       return 'none';
   }
 }
 
-function iconText(type: IconType): string {
+function iconText(type: ColumnName): string {
   switch (type) {
-    case IconType.READ:
+    case ColumnName.READ:
       return props.modelValue.book?.read ? 'Read' : 'Not Read';
-    case IconType.WANT_TO_READ:
+    case ColumnName.WANT_TO_READ:
       return props.modelValue.book?.wantToRead
         ? 'Want to Read'
         : 'Do Not Want to Read';
-    case IconType.OWNED:
+    case ColumnName.OWNED:
       return props.modelValue.book?.owned ? 'Owned' : 'Not Owned';
-    case IconType.WANT_TO_OWN:
+    case ColumnName.WANT_TO_OWN:
       return props.modelValue.book?.wantToOwn
         ? 'Want to Own'
         : 'Do Not Want To Own';

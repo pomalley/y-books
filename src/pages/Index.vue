@@ -12,7 +12,7 @@
         clickable
         v-ripple
         class="row justify-start"
-        @click="itemClick(book.row)"
+        @click="itemClick(book.row || -1)"
       >
         <q-item-section class="col-4">
           {{ book.title }}
@@ -30,7 +30,7 @@
         </q-item-section>
       </q-item>
     </q-list>
-    <book-card v-model="state.bookCardModel" />
+    <book-card v-model="state.bookCardModel" :sheet-id="SHEET_ID" />
   </q-page>
 </template>
 
@@ -70,10 +70,13 @@ const DISCOVERY_DOCS = [
 
 // Authorization scopes required by the API; multiple scopes can be
 // included, separated by spaces.
-const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+// const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
 // First book in state.books (index 0) has row number ROW_OFFSET in the sheet.
 const ROW_OFFSET = 2;
+
+const SHEET_ID = '1U8Tyh6TuXj9JlFtD5JOHQNkn9f3_1YFq-65Nq0kSuyw';
 
 function itemClick(row: number) {
   state.bookCardModel.active = true;
@@ -100,31 +103,10 @@ function ownIcon(b: Book): string {
   return 'none';
 }
 
-function parseBoolean(v: string) {
-  return Boolean(v) && v.toUpperCase().trim() != 'FALSE' && v != '0';
-}
-
 function parseBooks(sheetData: string[][], firstRow: number) {
   let newBooks: Book[] = [];
   for (let row of sheetData) {
-    newBooks.push({
-      row: firstRow++,
-      title: row[0],
-      authors: row[1],
-      year: isNaN(Number(row[2])) ? undefined : Number(row[2]),
-      genres: row[3],
-      wantToRead: parseBoolean(row[4]),
-      read: parseBoolean(row[5]),
-      wantToOwn: parseBoolean(row[6]),
-      owned: parseBoolean(row[7]),
-      imageUrl: row[8],
-      dateRead: row[9],
-      googleBooksId: row[10],
-      hidden: parseBoolean(row[11]),
-      comments: row[12],
-      createdTimestamp: Number(row[13]),
-      updatedTimestamp: Number(row[14]),
-    });
+    newBooks.push(new Book(firstRow++, row));
   }
   return newBooks;
 }
@@ -193,7 +175,7 @@ function handleSignoutClick() {
 function listMajors() {
   gapi.client.sheets.spreadsheets.values
     .get({
-      spreadsheetId: '1U8Tyh6TuXj9JlFtD5JOHQNkn9f3_1YFq-65Nq0kSuyw',
+      spreadsheetId: SHEET_ID,
       range: 'Books!A2:O',
     })
     .then(
