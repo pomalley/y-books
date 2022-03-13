@@ -1,11 +1,11 @@
 <template>
   <q-page class="col items-center justify-evenly">
-    <span v-if="props.error || state.error"
-      >{{ props.error }} {{ state.error }}</span
-    >
+    <span v-if="props.error || state.error">
+      {{ props.error }} {{ state.error }}
+    </span>
     <q-list bordered separator class="rounded-borders">
       <q-item
-        v-for="book in state.books"
+        v-for="book in sortedBooks"
         :key="book.row"
         clickable
         v-ripple
@@ -33,9 +33,9 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, watch } from 'vue';
+import { reactive, watch, computed } from 'vue';
 import BookCard from 'components/BookCard.vue';
-import { Book, BookCardModel } from 'components/models';
+import { Book, BookCardModel, Sort, SortBy } from 'components/models';
 
 interface State {
   books: Book[];
@@ -50,6 +50,7 @@ const state: State = reactive({
 const props = defineProps<{
   sheetId: string;
   error: string;
+  sort: Sort;
 }>();
 
 // First book in state.books (index 0) has row number ROW_OFFSET in the sheet.
@@ -87,6 +88,25 @@ function parseBooks(sheetData: string[][], firstRow: number) {
   }
   return newBooks;
 }
+
+const sortedBooks = computed(() => {
+  return state.books.slice(0).sort((a, b) => {
+    switch (props.sort.by) {
+      case SortBy.UPDATED:
+        return a.updatedTimestamp < b.updatedTimestamp != props.sort.desc
+          ? -1
+          : 1;
+      case SortBy.TITLE:
+        return a.title < b.title != props.sort.desc ? -1 : 1;
+      case SortBy.AUTHOR:
+        return a.authors < b.authors != props.sort.desc ? -1 : 1;
+      case SortBy.CREATED:
+        return a.createdTimestamp < b.createdTimestamp != props.sort.desc
+          ? -1
+          : 1;
+    }
+  });
+});
 
 watch(
   () => props.sheetId,

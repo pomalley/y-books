@@ -19,8 +19,8 @@ export enum ColumnName {
 
 export class Book {
   row?: number;
-  title?: string;
-  authors?: string;
+  title!: string;
+  authors!: string;
   year?: number;
   genres?: string;
   wantToRead?: boolean;
@@ -32,8 +32,8 @@ export class Book {
   googleBooksId?: string;
   hidden?: boolean;
   comments?: string;
-  createdTimestamp?: number;
-  updatedTimestamp?: number;
+  createdTimestamp!: number;
+  updatedTimestamp!: number;
 
   constructor(row: number, sheetData: string[]) {
     this.row = row;
@@ -100,4 +100,15 @@ function parseBoolean(v: string) {
 export interface BookCardModel {
   active: boolean;
   book?: Book;
+}
+
+export enum SortBy {
+  CREATED = 'Creation Time',
+  UPDATED = 'Last Updated',
+  AUTHOR = 'Author',
+  TITLE = 'Title',
+}
+export interface Sort {
+  by: SortBy;
+  desc: boolean;
 }

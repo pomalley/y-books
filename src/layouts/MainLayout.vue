@@ -13,10 +13,43 @@
 
         <q-toolbar-title> y-books </q-toolbar-title>
 
-        <q-btn v-if="!signedIn" @click="handleAuthClick" class="bg-accent">
+        <q-btn :label="sort.by" class="bg-positive q-mx-xs">
+          <q-menu auto-close>
+            <q-list>
+              <q-item
+                v-for="by in [
+                  SortBy.AUTHOR,
+                  SortBy.TITLE,
+                  SortBy.CREATED,
+                  SortBy.UPDATED,
+                ]"
+                :key="by"
+                clickable
+                @click="sort.by = by"
+              >
+                {{ by }}
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-btn>
+        <q-btn
+          class="bg-positive q-mx-xs"
+          @click="sort.desc = !sort.desc"
+          :label="sort.desc ? 'DESC' : 'ASC'"
+        />
+
+        <q-btn
+          v-if="!signedIn"
+          @click="handleAuthClick"
+          class="bg-warning q-mx-sm"
+        >
           Authorize
         </q-btn>
-        <q-btn v-if="signedIn" @click="handleSignoutClick" class="bg-secondary">
+        <q-btn
+          v-if="signedIn"
+          @click="handleSignoutClick"
+          class="bg-secondary q-mx-sm"
+        >
           Sign Out
         </q-btn>
       </q-toolbar>
@@ -29,19 +62,21 @@
     </q-drawer>
 
     <q-page-container>
-      <router-view :error="gapiError" :sheet-id="sheetId" />
+      <router-view :error="gapiError" :sheet-id="sheetId" :sort="sort" />
     </q-page-container>
   </q-layout>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { reactive, ref, onMounted } from 'vue';
 import { API_KEY, CLIENT_ID } from 'src/keys';
+import { Sort, SortBy } from 'components/models';
 
 const leftDrawerOpen = ref(false);
 const signedIn = ref(false);
 const gapiError = ref('');
 const sheetId = ref('');
+const sort: Sort = reactive({ by: SortBy.CREATED, desc: true });
 
 // Array of API discovery doc URLs for APIs used by the quickstart
 const DISCOVERY_DOCS = [
