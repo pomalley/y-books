@@ -35,7 +35,7 @@
 <script setup lang="ts">
 import { reactive, watch, computed } from 'vue';
 import BookCard from 'components/BookCard.vue';
-import { Book, BookCardModel, Sort, SortBy } from 'components/models';
+import { Book, BookCardModel, Sort, SortBy, Filter } from 'components/models';
 
 interface State {
   books: Book[];
@@ -51,6 +51,7 @@ const props = defineProps<{
   sheetId: string;
   error: string;
   sort: Sort;
+  filter: Filter;
 }>();
 
 // First book in state.books (index 0) has row number ROW_OFFSET in the sheet.
@@ -90,7 +91,17 @@ function parseBooks(sheetData: string[][], firstRow: number) {
 }
 
 const sortedBooks = computed(() => {
-  return state.books.slice(0).sort((a, b) => {
+  const filtered = state.books.filter((book) => {
+    switch (props.filter) {
+      case Filter.WANT_TO_OWN:
+        return book.wantToOwn;
+      case Filter.WANT_TO_READ:
+        return book.wantToRead;
+      case Filter.NONE:
+        return true;
+    }
+  });
+  return filtered.sort((a, b) => {
     switch (props.sort.by) {
       case SortBy.UPDATED:
         return a.updatedTimestamp < b.updatedTimestamp != props.sort.desc

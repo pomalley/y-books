@@ -13,16 +13,26 @@
 
         <q-toolbar-title> y-books </q-toolbar-title>
 
+        <q-btn :label="`Filter: ${filter}`" class="bg-info q-mx-sm">
+          <q-menu auto-close>
+            <q-list>
+              <q-item
+                v-for="f in Filter"
+                :key="f"
+                clickable
+                @click="filter = f"
+              >
+                {{ f }}
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-btn>
+
         <q-btn :label="sort.by" class="bg-positive q-mx-xs">
           <q-menu auto-close>
             <q-list>
               <q-item
-                v-for="by in [
-                  SortBy.AUTHOR,
-                  SortBy.TITLE,
-                  SortBy.CREATED,
-                  SortBy.UPDATED,
-                ]"
+                v-for="by in SortBy"
                 :key="by"
                 clickable
                 @click="sort.by = by"
@@ -62,7 +72,12 @@
     </q-drawer>
 
     <q-page-container>
-      <router-view :error="gapiError" :sheet-id="sheetId" :sort="sort" />
+      <router-view
+        :error="gapiError"
+        :sheet-id="sheetId"
+        :sort="sort"
+        :filter="filter"
+      />
     </q-page-container>
   </q-layout>
 </template>
@@ -70,13 +85,14 @@
 <script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue';
 import { API_KEY, CLIENT_ID } from 'src/keys';
-import { Sort, SortBy } from 'components/models';
+import { Filter, Sort, SortBy } from 'components/models';
 
 const leftDrawerOpen = ref(false);
 const signedIn = ref(false);
 const gapiError = ref('');
 const sheetId = ref('');
 const sort: Sort = reactive({ by: SortBy.CREATED, desc: true });
+const filter = ref(Filter.NONE);
 
 // Array of API discovery doc URLs for APIs used by the quickstart
 const DISCOVERY_DOCS = [

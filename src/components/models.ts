@@ -103,12 +103,19 @@ export interface BookCardModel {
 }
 
 export enum SortBy {
-  CREATED = 'Creation Time',
-  UPDATED = 'Last Updated',
   AUTHOR = 'Author',
   TITLE = 'Title',
+  CREATED = 'Creation Time',
+  UPDATED = 'Last Updated',
 }
+
 export interface Sort {
   by: SortBy;
   desc: boolean;
+}
+
+export enum Filter {
+  NONE = 'None',
+  WANT_TO_READ = 'Want To Read',
+  WANT_TO_OWN = 'Want To Own',
 }
