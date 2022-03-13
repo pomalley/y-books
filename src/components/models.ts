@@ -1,12 +1,3 @@
-export interface Todo {
-  id: number;
-  content: string;
-}
-
-export interface Meta {
-  totalCount: number;
-}
-
 // Enum values are spreadsheet columns.
 export enum ColumnName {
   TITLE = 'A',

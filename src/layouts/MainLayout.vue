@@ -11,97 +11,102 @@
           @click="toggleLeftDrawer"
         />
 
-        <q-toolbar-title> Quasar App </q-toolbar-title>
+        <q-toolbar-title> y-books </q-toolbar-title>
 
-        <div>Quasar v{{ $q.version }}</div>
+        <q-btn v-if="!signedIn" @click="handleAuthClick" class="bg-accent">
+          Authorize
+        </q-btn>
+        <q-btn v-if="signedIn" @click="handleSignoutClick" class="bg-secondary">
+          Sign Out
+        </q-btn>
       </q-toolbar>
     </q-header>
 
     <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
       <q-list>
-        <q-item-label header> Essential Links </q-item-label>
-
-        <EssentialLink
-          v-for="link in essentialLinks"
-          :key="link.title"
-          v-bind="link"
-        />
+        <q-item-label header> Maybe add some links or something. </q-item-label>
       </q-list>
     </q-drawer>
 
     <q-page-container>
-      <router-view msg="test" />
+      <router-view :error="gapiError" :sheet-id="sheetId" />
     </q-page-container>
   </q-layout>
 </template>
 
-<script lang="ts">
-import EssentialLink from 'components/EssentialLink.vue';
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { API_KEY, CLIENT_ID } from 'src/keys';
 
-const linksList = [
-  {
-    title: 'Docs',
-    caption: 'quasar.dev',
-    icon: 'school',
-    link: 'https://quasar.dev',
-  },
-  {
-    title: 'Github',
-    caption: 'github.com/quasarframework',
-    icon: 'code',
-    link: 'https://github.com/quasarframework',
-  },
-  {
-    title: 'Discord Chat Channel',
-    caption: 'chat.quasar.dev',
-    icon: 'chat',
-    link: 'https://chat.quasar.dev',
-  },
-  {
-    title: 'Forum',
-    caption: 'forum.quasar.dev',
-    icon: 'record_voice_over',
-    link: 'https://forum.quasar.dev',
-  },
-  {
-    title: 'Twitter',
-    caption: '@quasarframework',
-    icon: 'rss_feed',
-    link: 'https://twitter.quasar.dev',
-  },
-  {
-    title: 'Facebook',
-    caption: '@QuasarFramework',
-    icon: 'public',
-    link: 'https://facebook.quasar.dev',
-  },
-  {
-    title: 'Quasar Awesome',
-    caption: 'Community Quasar projects',
-    icon: 'favorite',
-    link: 'https://awesome.quasar.dev',
-  },
+const leftDrawerOpen = ref(false);
+const signedIn = ref(false);
+const gapiError = ref('');
+const sheetId = ref('');
+
+// Array of API discovery doc URLs for APIs used by the quickstart
+const DISCOVERY_DOCS = [
+  'https://sheets.googleapis.com/$discovery/rest?version=v4',
 ];
 
-import { defineComponent, ref } from 'vue';
+// Authorization scopes required by the API; multiple scopes can be
+// included, separated by spaces.
+// const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
-export default defineComponent({
-  name: 'MainLayout',
+const SHEET_ID = '1U8Tyh6TuXj9JlFtD5JOHQNkn9f3_1YFq-65Nq0kSuyw';
 
-  components: {
-    EssentialLink,
-  },
+function toggleLeftDrawer() {
+  leftDrawerOpen.value = !leftDrawerOpen.value;
+}
 
-  setup() {
-    const leftDrawerOpen = ref(false);
-
-    return {
-      essentialLinks: linksList,
-      leftDrawerOpen,
-      toggleLeftDrawer() {
-        leftDrawerOpen.value = !leftDrawerOpen.value;
-      },
-    };
-  },
+onMounted(() => {
+  var gapiscript = document.createElement('script');
+  gapiscript.setAttribute('src', 'https://apis.google.com/js/api.js');
+  gapiscript.onload = () => handleClientLoad();
+  document.head.appendChild(gapiscript);
 });
+
+function handleClientLoad() {
+  gapi.load('client:auth2', initClient);
+}
+
+function initClient() {
+  gapi.client
+    .init({
+      apiKey: API_KEY,
+      clientId: CLIENT_ID,
+      discoveryDocs: DISCOVERY_DOCS,
+      scope: SCOPES,
+    })
+    .then(
+      function () {
+        // Listen for sign-in state changes.
+        gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
+
+        // Handle the initial sign-in state.
+        updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+      },
+      function (error) {
+        console.log(error);
+        gapiError.value = 'Failed to init gapi';
+      }
+    );
+}
+
+function updateSigninStatus(isSignedIn: boolean) {
+  signedIn.value = isSignedIn;
+  if (isSignedIn) {
+    sheetId.value = SHEET_ID;
+  } else {
+    sheetId.value = '';
+  }
+}
+
+function handleAuthClick() {
+  void gapi.auth2.getAuthInstance().signIn();
+}
+
+function handleSignoutClick() {
+  gapi.auth2.getAuthInstance().signOut();
+}
 </script>
