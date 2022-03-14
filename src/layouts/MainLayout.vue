@@ -86,14 +86,18 @@
       />
     </q-page-container>
 
-    <new-book v-model="newBookActive" />
+    <new-book
+      v-model="newBookActive"
+      @new-book="saveNewBook"
+      :saving="savingNewBook"
+    />
   </q-layout>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue';
+import { reactive, ref, onMounted, nextTick } from 'vue';
 import { API_KEY, CLIENT_ID } from 'src/keys';
-import { Filter, Sort, SortBy } from 'components/models';
+import { Book, Filter, Sort, SortBy } from 'components/models';
 import NewBook from 'components/NewBook.vue';
 
 const leftDrawerOpen = ref(false);
@@ -103,6 +107,7 @@ const sheetId = ref('');
 const sort: Sort = reactive({ by: SortBy.CREATED, desc: true });
 const filter = ref(Filter.NONE);
 const newBookActive = ref(false);
+const savingNewBook = ref(false);
 
 // Array of API discovery doc URLs for APIs used by the quickstart
 const DISCOVERY_DOCS = [
@@ -115,9 +120,34 @@ const DISCOVERY_DOCS = [
 const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
 const SHEET_ID = '1U8Tyh6TuXj9JlFtD5JOHQNkn9f3_1YFq-65Nq0kSuyw';
+const SUBSHEET = 'Books';
 
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value;
+}
+
+async function saveNewBook(book: Book) {
+  savingNewBook.value = true;
+  console.log(book);
+  const values: string[][] = [book.ToSpreadsheetRow(true, true)];
+  try {
+    const response = await gapi.client.sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range: SUBSHEET,
+      valueInputOption: 'USER_ENTERED',
+      resource: {
+        values: values,
+      },
+    });
+    console.log(response);
+    sheetId.value = '';
+    await nextTick(() => (sheetId.value = SHEET_ID));
+  } catch (e) {
+    console.log(e);
+  } finally {
+    savingNewBook.value = false;
+    newBookActive.value = false;
+  }
 }
 
 onMounted(() => {

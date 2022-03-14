@@ -42,6 +42,27 @@ export class Book {
     }
   }
 
+  ToSpreadsheetRow(updateTimeNow = false, creationTimeNow = false): string[] {
+    const now = String(Math.round(Date.now() / 1000));
+    return [
+      this.title,
+      this.authors,
+      this.year ? String(this.year) : '',
+      this.genres || '',
+      fromBoolean(this.wantToRead || false),
+      fromBoolean(this.read || false),
+      fromBoolean(this.wantToOwn || false),
+      fromBoolean(this.owned || false),
+      this.imageUrl || '',
+      this.dateRead || '',
+      this.googleBooksId || '',
+      fromBoolean(this.hidden || false),
+      this.comments || '',
+      creationTimeNow ? now : String(this.createdTimestamp),
+      updateTimeNow ? now : String(this.updatedTimestamp),
+    ];
+  }
+
   update(col: ColumnName, value: string): Book {
     switch (col) {
       case ColumnName.TITLE:
@@ -94,8 +115,12 @@ export class Book {
   }
 }
 
-function parseBoolean(v: string) {
+function parseBoolean(v: string): boolean {
   return Boolean(v) && v.toUpperCase().trim() != 'FALSE' && v != '0';
+}
+
+function fromBoolean(b: boolean): string {
+  return b ? 'TRUE' : 'FALSE';
 }
 
 export interface BookCardModel {

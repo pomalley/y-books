@@ -72,8 +72,19 @@
           @click="search"
           class="q-mx-xs"
         />
-        <q-btn label="Save" color="primary" class="q-mx-xs" />
+        <q-btn
+          label="Save"
+          color="primary"
+          class="q-mx-xs"
+          :disable="!book.authors && !book.title"
+          @click="emit('newBook', book)"
+        />
+        <q-btn label="Cancel" color="primary" class="q-mx-xs" v-close-popup />
       </q-card-actions>
+
+      <q-inner-loading :showing="saving">
+        <q-spinner-puff size="50px" color="primary" />
+      </q-inner-loading>
     </q-card>
     <g-book-selector
       v-model="gBookSelectorActive"
@@ -93,11 +104,12 @@ import GBookSelector from './GBookSelector.vue';
 
 defineProps<{
   modelValue: boolean;
+  saving: boolean;
 }>();
 
 const $q = useQuasar();
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'newBook']);
 
 let gBookSelectorActive = ref(false);
 let gBookResults = ref<Book[]>([]);
