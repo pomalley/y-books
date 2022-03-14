@@ -1,6 +1,12 @@
 // Functions for fetching data from Google Books.
 
-export function fetchGoogleBooksJson(title: string, authors: string) {
+import { Book, ColumnName } from './models';
+
+export function googleBooksLink(id: string) {
+  return `http://books.google.com/books?id=${id}&source=gbs_api`;
+}
+
+export async function fetchGoogleBooksJson(title: string, authors: string) {
   if (!title && !authors) {
     return Promise.reject(
       'Must specify title and/or author to query Google Books.'
@@ -13,47 +19,37 @@ export function fetchGoogleBooksJson(title: string, authors: string) {
   if (authors) {
     qString += '+inauthor:' + encodeURIComponent(authors);
   }
-  return fetchJson(
+  const response = await fetchJson(
     'https://www.googleapis.com/books/v1/volumes?q=' + qString
-  ).then((response) => {
-    console.log(response);
-    return convertGoogleBooksData(response as GoogleBooksResponse);
-  });
+  );
+  const resp = response as GoogleBooksResponse;
+  if (!resp.items) {
+    return [];
+  }
+  return resp.items.map(convertGoogleBooksData);
 }
 
-interface ImageLinks {
-  thumbnail: string;
-}
-
-interface VolumeInfo {
-  title: string;
-  authors: string[];
-  categories: string[];
-  publishedDate: string;
-  imageLinks?: ImageLinks;
-}
-
-interface GoogleBooksResponse {
-  volumeInfo: VolumeInfo;
-  id: string;
-}
-
-function convertGoogleBooksData(googleData: GoogleBooksResponse) {
+function convertGoogleBooksData(googleData: GoogleBook) {
   const maybeJoin = function (maybeArr: string[]) {
     return maybeArr ? maybeArr.join(';') : '';
   };
-  return {
-    title: googleData.volumeInfo.title,
-    authors: maybeJoin(googleData.volumeInfo.authors),
-    imageUrl: googleData.volumeInfo.imageLinks
-      ? googleData.volumeInfo.imageLinks.thumbnail
-      : '',
-    googleBooksId: googleData.id,
-    year: googleData.volumeInfo.publishedDate
-      ? googleData.volumeInfo.publishedDate.split('-')[0]
-      : '',
-    genres: maybeJoin(googleData.volumeInfo.categories),
-  };
+  return new Book(-1, [])
+    .update(ColumnName.TITLE, googleData.volumeInfo.title)
+    .update(ColumnName.AUTHORS, maybeJoin(googleData.volumeInfo.authors))
+    .update(ColumnName.GENRES, maybeJoin(googleData.volumeInfo.categories))
+    .update(ColumnName.GOOGLE_BOOKS_ID, googleData.id)
+    .update(
+      ColumnName.IMAGE_URL,
+      googleData.volumeInfo.imageLinks
+        ? googleData.volumeInfo.imageLinks.thumbnail
+        : ''
+    )
+    .update(
+      ColumnName.YEAR,
+      googleData.volumeInfo.publishedDate
+        ? googleData.volumeInfo.publishedDate.split('-')[0]
+        : ''
+    );
 }
 
 function fetchJson(url: string, json?: object) {
@@ -82,4 +78,28 @@ function fetchJson(url: string, json?: object) {
       httpRequest.send(JSON.stringify(json));
     }
   });
+}
+
+// Rough typing for the google books api response.
+interface ImageLinks {
+  thumbnail: string;
+}
+
+interface VolumeInfo {
+  title: string;
+  authors: string[];
+  categories: string[];
+  publishedDate: string;
+  imageLinks?: ImageLinks;
+}
+
+interface GoogleBook {
+  volumeInfo: VolumeInfo;
+  id: string;
+}
+
+interface GoogleBooksResponse {
+  items: GoogleBook[];
+  totalItems: number;
+  kind: string;
 }

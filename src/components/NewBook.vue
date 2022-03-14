@@ -52,32 +52,69 @@
               }}</q-tooltip>
             </q-icon>
           </q-card-section>
+
+          <q-btn
+            :disable="!book.googleBooksId"
+            target="_blank"
+            :href="googleBooksLink(book.googleBooksId!)"
+            color="primary"
+          >
+            Google Books
+          </q-btn>
         </q-card-section>
       </q-card-section>
       <q-separator inset />
       <q-card-actions align="center">
-        <q-btn label="Search" color="primary" @click="search" class="q-mx-xs" />
+        <q-btn
+          label="Search"
+          :disable="!book.authors && !book.title"
+          color="primary"
+          @click="search"
+          class="q-mx-xs"
+        />
         <q-btn label="Save" color="primary" class="q-mx-xs" />
       </q-card-actions>
     </q-card>
+    <g-book-selector
+      v-model="gBookSelectorActive"
+      :books="gBookResults"
+      @select-book="selectBook"
+    />
   </q-dialog>
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
 import { Book, ColumnName } from './models';
 import { iconName, iconTooltip } from './icons';
-import { fetchGoogleBooksJson } from './googleBooks';
+import { fetchGoogleBooksJson, googleBooksLink } from './googleBooks';
+import { useQuasar } from 'quasar';
+import GBookSelector from './GBookSelector.vue';
 
 defineProps<{
   modelValue: boolean;
 }>();
 
+const $q = useQuasar();
+
 const emit = defineEmits(['update:modelValue']);
+
+let gBookSelectorActive = ref(false);
+let gBookResults = ref<Book[]>([]);
 
 const book: Book = reactive(
   new Book(-1, []).update(ColumnName.WANT_TO_READ, 'TRUE')
 );
+
+function selectBook(newBook: Book) {
+  book.title = newBook.title || book.title;
+  book.authors = newBook.authors || book.authors;
+  book.genres = newBook.genres || book.genres;
+  book.year = newBook.year || book.year;
+  book.googleBooksId = newBook.googleBooksId;
+  book.imageUrl = newBook.imageUrl || book.imageUrl;
+  gBookSelectorActive.value = false;
+}
 
 function fieldDisplayText(col: ColumnName): string {
   switch (col) {
@@ -143,7 +180,18 @@ function iconClick(col: ColumnName) {
 
 function search() {
   fetchGoogleBooksJson(book.title, book.authors)
-    .then((result) => console.log(result))
+    .then((result) => {
+      if (!result || result.length == 0) {
+        $q.notify({
+          message: 'No books found',
+          position: 'center',
+          closeBtn: true,
+        });
+        return;
+      }
+      gBookResults.value = result;
+      gBookSelectorActive.value = true;
+    })
     .catch((error) => console.log(error));
 }
 </script>
