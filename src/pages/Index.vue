@@ -44,7 +44,7 @@ interface State {
 }
 const state: State = reactive({
   books: [],
-  bookCardModel: { active: false },
+  bookCardModel: { active: false, book: new Book(-1, []) },
 });
 
 const props = defineProps<{

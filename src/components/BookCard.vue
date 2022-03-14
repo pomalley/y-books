@@ -10,41 +10,37 @@
   >
     <q-card class="q-dialog-plugin">
       <q-card-section horizontal>
-        <q-img
-          :src="modelValue.book?.imageUrl"
-          fit="scale-down"
-          class="col-4"
-        />
+        <q-img :src="modelValue.book.imageUrl" fit="scale-down" class="col-4" />
         <q-card-section class="col-8">
           <edit-string-card-section
             :updating="updating[ColumnName.TITLE]"
-            :text="modelValue.book?.title || ''"
+            :text="modelValue.book.title || ''"
             @edit="(value) => updateText(ColumnName.TITLE, value)"
             empty-text="[no title]"
           />
           <edit-string-card-section
             :updating="updating[ColumnName.AUTHORS]"
-            :text="modelValue.book?.authors || ''"
+            :text="modelValue.book.authors || ''"
             @edit="(value) => updateText(ColumnName.AUTHORS, value)"
             empty-text="[no authors]"
           />
           <edit-string-card-section
             year
             :updating="updating[ColumnName.YEAR]"
-            :text="String(modelValue.book?.year)"
+            :text="String(modelValue.book.year)"
             @edit="(value) => updateText(ColumnName.YEAR, value)"
             empty-text="[no year]"
           />
           <edit-string-card-section
             :updating="updating[ColumnName.GENRES]"
-            :text="modelValue.book?.genres || ''"
+            :text="modelValue.book.genres || ''"
             @edit="(value) => updateText(ColumnName.GENRES, value)"
             empty-text="no genres"
           />
           <edit-string-card-section
             year-month
             :updating="updating[ColumnName.DATE_READ]"
-            :text="modelValue.book?.dateRead || ''"
+            :text="modelValue.book.dateRead || ''"
             @edit="(value) => updateText(ColumnName.DATE_READ, value)"
             :display-text="formattedDateRead()"
             empty-text="[no date read]"
@@ -58,19 +54,21 @@
                 ColumnName.WANT_TO_OWN,
               ]"
               :key="colName"
-              :name="iconName(colName)"
+              :name="iconName(colName, modelValue.book)"
               size="md"
               @click="iconClick(colName)"
               class="q-px-sm cursor-pointer"
               :class="{ disabled: updating[colName] }"
             >
-              <q-tooltip class="text-body2">{{ iconText(colName) }}</q-tooltip>
+              <q-tooltip class="text-body2">{{
+                iconTooltip(colName, modelValue.book)
+              }}</q-tooltip>
             </q-icon>
           </q-card-section>
           <q-separator inset />
           <edit-string-card-section
             :updating="updating[ColumnName.COMMENTS]"
-            :text="modelValue.book?.comments || ''"
+            :text="modelValue.book.comments || ''"
             @edit="(value) => updateText(ColumnName.COMMENTS, value)"
             empty-text="[no comment]"
           />
@@ -78,10 +76,10 @@
       </q-card-section>
       <q-card-section horizontal>
         <q-card-section class="col-6 q-pa-none text-center text-caption">
-          Created: {{ displayTimestamp(modelValue.book?.createdTimestamp) }}
+          Created: {{ displayTimestamp(modelValue.book.createdTimestamp) }}
         </q-card-section>
         <q-card-section class="col-6 q-pa-none text-center text-caption">
-          Updated: {{ displayTimestamp(modelValue.book?.updatedTimestamp) }}
+          Updated: {{ displayTimestamp(modelValue.book.updatedTimestamp) }}
         </q-card-section>
       </q-card-section>
       <q-card-actions align="center">
@@ -94,6 +92,7 @@
 <script setup lang="ts">
 import { defineEmits, reactive } from 'vue';
 import { BookCardModel, ColumnName } from 'components/models';
+import { iconName, iconTooltip } from './icons';
 import EditStringCardSection from 'components/EditStringCardSection.vue';
 
 const props = defineProps<{
@@ -106,7 +105,7 @@ const updating: Record<string, boolean> = reactive({});
 const emit = defineEmits(['update:modelValue']);
 
 function updateText(col: ColumnName, value: string) {
-  if (!props.modelValue.book?.row) return;
+  if (!props.modelValue.book.row) return;
   updateCell(props.modelValue.book.row, col, value);
 }
 
@@ -122,7 +121,7 @@ function updateCell(row: number, col: ColumnName, value: string) {
     .then(
       (response) => {
         const newModel = { ...props.modelValue };
-        newModel.book?.update(col, value);
+        newModel.book.update(col, value);
         emit('update:modelValue', newModel);
         console.log('Update successful: ', response);
         updating[col] = false;
@@ -143,7 +142,7 @@ function updateCell(row: number, col: ColumnName, value: string) {
 }
 
 function iconClick(type: ColumnName) {
-  if (!props.modelValue.book?.row) return;
+  if (!props.modelValue.book.row) return;
   let newValue = '';
   switch (type) {
     case ColumnName.READ:
@@ -166,44 +165,6 @@ function iconClick(type: ColumnName) {
   updateCell(props.modelValue.book.row, type, newValue);
 }
 
-function iconName(type: ColumnName): string {
-  switch (type) {
-    case ColumnName.READ:
-      return props.modelValue.book?.read ? 'fas fa-check' : 'la la-times';
-    case ColumnName.WANT_TO_READ:
-      return props.modelValue.book?.wantToRead
-        ? 'fas fa-book-open'
-        : 'la la-book-open';
-    case ColumnName.OWNED:
-      return props.modelValue.book?.owned
-        ? 'fas fa-book-medical'
-        : 'la la-book-medical';
-    case ColumnName.WANT_TO_OWN:
-      return props.modelValue.book?.wantToOwn ? 'fas fa-coins' : 'la la-coins';
-    default:
-      return 'none';
-  }
-}
-
-function iconText(type: ColumnName): string {
-  switch (type) {
-    case ColumnName.READ:
-      return props.modelValue.book?.read ? 'Read' : 'Not Read';
-    case ColumnName.WANT_TO_READ:
-      return props.modelValue.book?.wantToRead
-        ? 'Want to Read'
-        : 'Do Not Want to Read';
-    case ColumnName.OWNED:
-      return props.modelValue.book?.owned ? 'Owned' : 'Not Owned';
-    case ColumnName.WANT_TO_OWN:
-      return props.modelValue.book?.wantToOwn
-        ? 'Want to Own'
-        : 'Do Not Want To Own';
-    default:
-      return 'Uh Oh!';
-  }
-}
-
 function displayTimestamp(timestamp?: number): string {
   if (!timestamp) return '';
   const date = new Date(timestamp * 1000);
@@ -211,7 +172,7 @@ function displayTimestamp(timestamp?: number): string {
 }
 
 function formattedDateRead(): string {
-  if (!props.modelValue.book?.dateRead) {
+  if (!props.modelValue.book.dateRead) {
     return '';
   }
   const regex = /(\d\d\d\d)-(\d\d)/;

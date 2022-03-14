@@ -13,6 +13,12 @@
 
         <q-toolbar-title> y-books </q-toolbar-title>
 
+        <q-btn
+          label="New Book"
+          class="bg-accent q-mx-sm"
+          @click="newBookActive = true"
+        />
+
         <q-btn :label="`Filter: ${filter}`" class="bg-info q-mx-sm">
           <q-menu auto-close>
             <q-list>
@@ -79,6 +85,8 @@
         :filter="filter"
       />
     </q-page-container>
+
+    <new-book v-model="newBookActive" />
   </q-layout>
 </template>
 
@@ -86,6 +94,7 @@
 import { reactive, ref, onMounted } from 'vue';
 import { API_KEY, CLIENT_ID } from 'src/keys';
 import { Filter, Sort, SortBy } from 'components/models';
+import NewBook from 'components/NewBook.vue';
 
 const leftDrawerOpen = ref(false);
 const signedIn = ref(false);
@@ -93,6 +102,7 @@ const gapiError = ref('');
 const sheetId = ref('');
 const sort: Sort = reactive({ by: SortBy.CREATED, desc: true });
 const filter = ref(Filter.NONE);
+const newBookActive = ref(false);
 
 // Array of API discovery doc URLs for APIs used by the quickstart
 const DISCOVERY_DOCS = [

@@ -42,7 +42,7 @@ export class Book {
     }
   }
 
-  update(col: ColumnName, value: string): void {
+  update(col: ColumnName, value: string): Book {
     switch (col) {
       case ColumnName.TITLE:
         this.title = value;
@@ -90,6 +90,7 @@ export class Book {
         this.updatedTimestamp = Number(value);
         break;
     }
+    return this;
   }
 }
 
@@ -99,7 +100,7 @@ function parseBoolean(v: string) {
 
 export interface BookCardModel {
   active: boolean;
-  book?: Book;
+  book: Book;
 }
 
 export enum SortBy {
