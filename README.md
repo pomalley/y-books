@@ -38,9 +38,9 @@ See [Configuring quasar.conf.js](https://quasar.dev/quasar-cli/quasar-conf-js).
 
 ### Secrets
 
-Add a file (not in version control) called `keys.ts` with:
+Add a file (not in version control) called `src/keys.ts` with:
 
 ```typescript
-export API_KEY = '<google cloud project api key>';
-export CLIENT_ID = '<google cloud project client id>';
+export const API_KEY = '<google cloud project api key>';
+export const CLIENT_ID = '<google cloud project client id>';
 ```
