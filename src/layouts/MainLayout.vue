@@ -72,6 +72,7 @@
             {{ f }}
           </q-btn>
         </q-item>
+        <q-item><q-toggle v-model="showHidden" label="Show Hidden" /></q-item>
         <q-item-label header>Sort</q-item-label>
         <q-item>
           <q-btn :label="sort.by" color="positive">
@@ -105,6 +106,7 @@
         :sort="sort"
         :filter="filter"
         :searchText="searchText"
+        :showHidden="showHidden"
       />
     </q-page-container>
 
@@ -143,6 +145,7 @@ const searchText = ref('');
 const gBookResults = ref<Book[]>([]);
 const gBookSelectorActive = ref(false);
 const startingBook = ref<Book>();
+const showHidden = ref(false);
 
 // Array of API discovery doc URLs for APIs used by the quickstart
 const DISCOVERY_DOCS = [

@@ -102,6 +102,11 @@
       </q-card-section>
       <q-card-actions align="center">
         <q-btn v-close-popup color="primary" label="OK" />
+        <q-btn
+          color="warning"
+          :label="modelValue.book.hidden ? 'Unhide' : 'Hide'"
+          @click="hide"
+        />
       </q-card-actions>
     </q-card>
     <g-book-selector
@@ -133,6 +138,24 @@ const gBookSelectorActive = ref(false);
 const gBookResults = ref<Book[]>([]);
 
 const emit = defineEmits(['update:modelValue']);
+
+function hide() {
+  const hidden = Boolean(props.modelValue.book.hidden);
+  $q.dialog({
+    message: `${hidden ? 'Unhide (undelete)' : 'Hide (delete)'} this book?`,
+    ok: true,
+    cancel: true,
+  }).onOk(() => {
+    if (props.modelValue.book.row) {
+      updateCell(
+        props.modelValue.book.row,
+        ColumnName.HIDDEN,
+        hidden ? 'FALSE' : 'TRUE'
+      );
+    }
+    emit('update:modelValue', { active: false, book: props.modelValue.book });
+  });
+}
 
 async function searchAgain() {
   try {
@@ -175,11 +198,10 @@ function updateCell(row: number, col: ColumnName, value: string) {
       valueInputOption: 'USER_ENTERED',
     })
     .then(
-      (response) => {
+      () => {
         const newModel = { ...props.modelValue };
         newModel.book.update(col, value);
         emit('update:modelValue', newModel);
-        console.log('Update successful: ', response);
         updating[col] = false;
         // set updated timestamp as well (but only once).
         if (col != ColumnName.UPDATED_TIMESTAMP) {

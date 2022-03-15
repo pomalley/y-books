@@ -53,6 +53,7 @@ const props = defineProps<{
   sort: Sort;
   filter: Filter;
   searchText: string;
+  showHidden: boolean;
 }>();
 
 // First book in state.books (index 0) has row number ROW_OFFSET in the sheet.
@@ -93,6 +94,7 @@ function parseBooks(sheetData: string[][], firstRow: number) {
 
 const sortedBooks = computed(() => {
   let filtered = state.books.filter((book) => {
+    if (!props.showHidden && book.hidden) return false;
     switch (props.filter) {
       case Filter.WANT_TO_OWN:
         return book.wantToOwn;
