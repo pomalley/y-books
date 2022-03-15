@@ -33,27 +33,6 @@
             </q-btn>
           </template>
         </q-input>
-
-        <q-btn
-          label="New Book"
-          class="bg-accent q-mx-sm"
-          @click="newBookActive = true"
-        />
-
-        <q-btn
-          v-if="!signedIn"
-          @click="handleAuthClick"
-          class="bg-warning q-mx-sm"
-        >
-          Authorize
-        </q-btn>
-        <q-btn
-          v-if="signedIn"
-          @click="handleSignoutClick"
-          class="bg-secondary q-mx-sm"
-        >
-          Sign Out
-        </q-btn>
       </q-toolbar>
     </q-header>
 
@@ -95,6 +74,33 @@
             @click="sort.desc = !sort.desc"
             :label="sort.desc ? 'DESC' : 'ASC'"
           />
+        </q-item>
+        <q-separator />
+        <q-item>
+          <q-btn
+            label="New Book"
+            color="accent"
+            @click="newBookActive = true"
+            class="full-width"
+          />
+        </q-item>
+        <q-item>
+          <q-btn
+            v-if="!signedIn"
+            @click="handleAuthClick"
+            color="warning"
+            class="full-width"
+          >
+            Authorize
+          </q-btn>
+          <q-btn
+            v-if="signedIn"
+            @click="handleSignoutClick"
+            color="secondary"
+            class="full-width"
+          >
+            Sign Out
+          </q-btn>
         </q-item>
       </q-list>
     </q-drawer>
