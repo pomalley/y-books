@@ -19,41 +19,6 @@
           @click="newBookActive = true"
         />
 
-        <q-btn :label="`Filter: ${filter}`" class="bg-info q-mx-sm">
-          <q-menu auto-close>
-            <q-list>
-              <q-item
-                v-for="f in Filter"
-                :key="f"
-                clickable
-                @click="filter = f"
-              >
-                {{ f }}
-              </q-item>
-            </q-list>
-          </q-menu>
-        </q-btn>
-
-        <q-btn :label="sort.by" class="bg-positive q-mx-xs">
-          <q-menu auto-close>
-            <q-list>
-              <q-item
-                v-for="by in SortBy"
-                :key="by"
-                clickable
-                @click="sort.by = by"
-              >
-                {{ by }}
-              </q-item>
-            </q-list>
-          </q-menu>
-        </q-btn>
-        <q-btn
-          class="bg-positive q-mx-xs"
-          @click="sort.desc = !sort.desc"
-          :label="sort.desc ? 'DESC' : 'ASC'"
-        />
-
         <q-btn
           v-if="!signedIn"
           @click="handleAuthClick"
@@ -73,7 +38,55 @@
 
     <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
       <q-list>
-        <q-item-label header> Maybe add some links or something. </q-item-label>
+        <q-item-label header> Filter </q-item-label>
+        <q-item>
+          <q-btn
+            color="info"
+            :outline="filter !== f"
+            v-for="f in Filter"
+            :key="f"
+            @click="filter = f"
+            class="q-mx-xs"
+          >
+            {{ f }}
+          </q-btn>
+          <!-- <q-menu auto-close>
+              <q-list>
+                <q-item
+                  v-for="f in Filter"
+                  :key="f"
+                  clickable
+                  @click="filter = f"
+                >
+                  {{ f }}
+                </q-item>
+              </q-list>
+            </q-menu>
+          </q-btn> -->
+        </q-item>
+        <q-item-label header>Sort</q-item-label>
+        <q-item>
+          <q-btn :label="sort.by" color="positive">
+            <q-menu auto-close>
+              <q-list>
+                <q-item
+                  v-for="by in SortBy"
+                  :key="by"
+                  clickable
+                  @click="sort.by = by"
+                >
+                  {{ by }}
+                </q-item>
+              </q-list>
+            </q-menu>
+          </q-btn>
+          <q-btn
+            class="q-mx-xs"
+            color="positive"
+            @click="sort.desc = !sort.desc"
+            :label="sort.desc ? 'DESC' : 'ASC'"
+          />
+        </q-item>
       </q-list>
     </q-drawer>
 
