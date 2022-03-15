@@ -71,7 +71,8 @@ export class Book {
       Boolean(
         this.year && String(this.year).toLowerCase().includes(lowerText)
       ) ||
-      Boolean(this.genres && this.genres.toLowerCase().includes(lowerText))
+      Boolean(this.genres && this.genres.toLowerCase().includes(lowerText)) ||
+      Boolean(this.comments && this.comments.toLowerCase().includes(lowerText))
     );
   }
 
