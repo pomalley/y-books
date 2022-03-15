@@ -63,6 +63,15 @@ export class Book {
     ];
   }
 
+  mergeFrom(newBook: Book) {
+    this.title = newBook.title || this.title;
+    this.authors = newBook.authors || this.authors;
+    this.genres = newBook.genres || this.genres;
+    this.year = newBook.year || this.year;
+    this.googleBooksId = newBook.googleBooksId || this.googleBooksId;
+    this.imageUrl = newBook.imageUrl || this.imageUrl;
+  }
+
   update(col: ColumnName, value: string): Book {
     switch (col) {
       case ColumnName.TITLE:

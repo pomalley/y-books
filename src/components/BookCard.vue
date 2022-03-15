@@ -10,7 +10,9 @@
   >
     <q-card class="q-dialog-plugin">
       <q-card-section horizontal>
-        <q-img :src="modelValue.book.imageUrl" fit="scale-down" class="col-4" />
+        <q-card-section vertical class="col-4">
+          <q-img :src="modelValue.book.imageUrl" fit="scale-down" />
+        </q-card-section>
         <q-card-section class="col-8">
           <edit-string-card-section
             :updating="updating[ColumnName.TITLE]"
@@ -74,6 +76,22 @@
           />
         </q-card-section>
       </q-card-section>
+      <q-card-actions align="center">
+        <q-btn
+          v-if="modelValue.book.googleBooksId"
+          color="primary"
+          :href="googleBooksLink(modelValue.book.googleBooksId)"
+          target="_blank"
+        >
+          Google Books
+        </q-btn>
+        <q-btn
+          color="secondary"
+          :disable="!modelValue.book.authors && !modelValue.book.title"
+          @click="searchAgain"
+          >Search Again</q-btn
+        >
+      </q-card-actions>
       <q-card-section horizontal>
         <q-card-section class="col-6 q-pa-none text-center text-caption">
           Created: {{ displayTimestamp(modelValue.book.createdTimestamp) }}
@@ -86,14 +104,24 @@
         <q-btn v-close-popup color="primary" label="OK" />
       </q-card-actions>
     </q-card>
+    <g-book-selector
+      v-model="gBookSelectorActive"
+      :books="gBookResults"
+      @select-book="selectGoogleBook"
+    />
   </q-dialog>
 </template>
 
 <script setup lang="ts">
-import { defineEmits, reactive } from 'vue';
-import { BookCardModel, ColumnName } from 'components/models';
+import { defineEmits, reactive, ref } from 'vue';
+import { BookCardModel, ColumnName, Book } from 'components/models';
 import { iconName, iconTooltip } from './icons';
 import EditStringCardSection from 'components/EditStringCardSection.vue';
+import { googleBooksLink, fetchGoogleBooksJson } from './googleBooks';
+import { useQuasar } from 'quasar';
+import GBookSelector from './GBookSelector.vue';
+
+const $q = useQuasar();
 
 const props = defineProps<{
   sheetId: string;
@@ -101,8 +129,36 @@ const props = defineProps<{
 }>();
 
 const updating: Record<string, boolean> = reactive({});
+const gBookSelectorActive = ref(false);
+const gBookResults = ref<Book[]>([]);
 
 const emit = defineEmits(['update:modelValue']);
+
+async function searchAgain() {
+  try {
+    const result = await fetchGoogleBooksJson(
+      props.modelValue.book.title,
+      props.modelValue.book.authors
+    );
+    if (!result || result.length == 0) {
+      $q.notify({
+        message: 'No books found',
+        position: 'center',
+        closeBtn: true,
+      });
+      return;
+    }
+    gBookResults.value = result;
+    gBookSelectorActive.value = true;
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+function selectGoogleBook(newBook: Book) {
+  props.modelValue.book.mergeFrom(newBook);
+  gBookSelectorActive.value = false;
+}
 
 function updateText(col: ColumnName, value: string) {
   if (!props.modelValue.book.row) return;

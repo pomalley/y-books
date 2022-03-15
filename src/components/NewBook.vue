@@ -119,12 +119,7 @@ const book: Book = reactive(
 );
 
 function selectBook(newBook: Book) {
-  book.title = newBook.title || book.title;
-  book.authors = newBook.authors || book.authors;
-  book.genres = newBook.genres || book.genres;
-  book.year = newBook.year || book.year;
-  book.googleBooksId = newBook.googleBooksId;
-  book.imageUrl = newBook.imageUrl || book.imageUrl;
+  book.mergeFrom(newBook);
   gBookSelectorActive.value = false;
 }
 
