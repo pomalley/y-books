@@ -52,6 +52,7 @@ const props = defineProps<{
   error: string;
   sort: Sort;
   filter: Filter;
+  searchText: string;
 }>();
 
 // First book in state.books (index 0) has row number ROW_OFFSET in the sheet.
@@ -91,7 +92,7 @@ function parseBooks(sheetData: string[][], firstRow: number) {
 }
 
 const sortedBooks = computed(() => {
-  const filtered = state.books.filter((book) => {
+  let filtered = state.books.filter((book) => {
     switch (props.filter) {
       case Filter.WANT_TO_OWN:
         return book.wantToOwn;
@@ -101,6 +102,11 @@ const sortedBooks = computed(() => {
         return true;
     }
   });
+  if (props.searchText) {
+    filtered = filtered.filter((book) => {
+      return book.matchesSearch(props.searchText);
+    });
+  }
   return filtered.sort((a, b) => {
     switch (props.sort.by) {
       case SortBy.UPDATED:

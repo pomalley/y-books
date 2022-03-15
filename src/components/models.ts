@@ -63,6 +63,18 @@ export class Book {
     ];
   }
 
+  matchesSearch(searchText: string): boolean {
+    const lowerText = searchText.toLowerCase();
+    return (
+      this.title.toLowerCase().includes(lowerText) ||
+      this.authors.toLowerCase().includes(lowerText) ||
+      Boolean(
+        this.year && String(this.year).toLowerCase().includes(lowerText)
+      ) ||
+      Boolean(this.genres && this.genres.toLowerCase().includes(lowerText))
+    );
+  }
+
   mergeFrom(newBook: Book) {
     this.title = newBook.title || this.title;
     this.authors = newBook.authors || this.authors;

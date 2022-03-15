@@ -38,6 +38,17 @@
 
     <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
       <q-list>
+        <q-input
+          outlined
+          v-model="searchText"
+          placeholder="Search"
+          class="q-ma-sm"
+        >
+          <template v-slot:prepend>
+            <q-icon name="search" />
+          </template>
+          <!-- <template v-slot:append><kbd>/</kbd></template> -->
+        </q-input>
         <q-item-label header> Filter </q-item-label>
         <q-item>
           <q-btn
@@ -50,19 +61,6 @@
           >
             {{ f }}
           </q-btn>
-          <!-- <q-menu auto-close>
-              <q-list>
-                <q-item
-                  v-for="f in Filter"
-                  :key="f"
-                  clickable
-                  @click="filter = f"
-                >
-                  {{ f }}
-                </q-item>
-              </q-list>
-            </q-menu>
-          </q-btn> -->
         </q-item>
         <q-item-label header>Sort</q-item-label>
         <q-item>
@@ -96,6 +94,7 @@
         :sheet-id="sheetId"
         :sort="sort"
         :filter="filter"
+        :searchText="searchText"
       />
     </q-page-container>
 
@@ -121,6 +120,7 @@ const sort: Sort = reactive({ by: SortBy.CREATED, desc: true });
 const filter = ref(Filter.NONE);
 const newBookActive = ref(false);
 const savingNewBook = ref(false);
+const searchText = ref('');
 
 // Array of API discovery doc URLs for APIs used by the quickstart
 const DISCOVERY_DOCS = [
@@ -141,10 +141,9 @@ function toggleLeftDrawer() {
 
 async function saveNewBook(book: Book) {
   savingNewBook.value = true;
-  console.log(book);
   const values: string[][] = [book.ToSpreadsheetRow(true, true)];
   try {
-    const response = await gapi.client.sheets.spreadsheets.values.append({
+    await gapi.client.sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: SUBSHEET,
       valueInputOption: 'USER_ENTERED',
@@ -152,7 +151,6 @@ async function saveNewBook(book: Book) {
         values: values,
       },
     });
-    console.log(response);
     sheetId.value = '';
     await nextTick(() => (sheetId.value = SHEET_ID));
   } catch (e) {
