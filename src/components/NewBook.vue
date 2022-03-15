@@ -95,16 +95,17 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { reactive, ref, watch } from 'vue';
 import { Book, ColumnName } from './models';
 import { iconName, iconTooltip } from './icons';
 import { fetchGoogleBooksJson, googleBooksLink } from './googleBooks';
 import { useQuasar } from 'quasar';
 import GBookSelector from './GBookSelector.vue';
 
-defineProps<{
+const props = defineProps<{
   modelValue: boolean;
   saving: boolean;
+  startingBook?: Book;
 }>();
 
 const $q = useQuasar();
@@ -116,6 +117,15 @@ let gBookResults = ref<Book[]>([]);
 
 const book: Book = reactive(
   new Book(-1, []).update(ColumnName.WANT_TO_READ, 'TRUE')
+);
+
+watch(
+  () => props.startingBook,
+  (newStartingBook: Book) => {
+    if (newStartingBook) {
+      book.mergeFrom(newStartingBook);
+    }
+  }
 );
 
 function selectBook(newBook: Book) {

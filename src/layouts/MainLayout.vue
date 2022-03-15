@@ -13,6 +13,27 @@
 
         <q-toolbar-title> y-books </q-toolbar-title>
 
+        <q-input
+          standout
+          dark
+          dense
+          v-model="searchText"
+          @keyup.enter="searchExternal"
+          placeholder="Search"
+        >
+          <template v-slot:before>
+            <q-icon name="search" v-if="!searchText" />
+            <q-btn
+              dense
+              v-if="searchText"
+              color="secondary"
+              @click="searchExternal"
+            >
+              <q-icon name="search" />
+            </q-btn>
+          </template>
+        </q-input>
+
         <q-btn
           label="New Book"
           class="bg-accent q-mx-sm"
@@ -38,17 +59,6 @@
 
     <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
       <q-list>
-        <q-input
-          outlined
-          v-model="searchText"
-          placeholder="Search"
-          class="q-ma-sm"
-        >
-          <template v-slot:prepend>
-            <q-icon name="search" />
-          </template>
-          <!-- <template v-slot:append><kbd>/</kbd></template> -->
-        </q-input>
         <q-item-label header> Filter </q-item-label>
         <q-item>
           <q-btn
@@ -102,6 +112,13 @@
       v-model="newBookActive"
       @new-book="saveNewBook"
       :saving="savingNewBook"
+      :starting-book="startingBook"
+    />
+
+    <g-book-selector
+      v-model="gBookSelectorActive"
+      :books="gBookResults"
+      @select-book="selectBook"
     />
   </q-layout>
 </template>
@@ -111,6 +128,8 @@ import { reactive, ref, onMounted, nextTick } from 'vue';
 import { API_KEY, CLIENT_ID } from 'src/keys';
 import { Book, Filter, Sort, SortBy } from 'components/models';
 import NewBook from 'components/NewBook.vue';
+import GBookSelector from 'src/components/GBookSelector.vue';
+import { fetchGoogleBooksJson } from 'src/components/googleBooks';
 
 const leftDrawerOpen = ref(false);
 const signedIn = ref(false);
@@ -121,6 +140,9 @@ const filter = ref(Filter.NONE);
 const newBookActive = ref(false);
 const savingNewBook = ref(false);
 const searchText = ref('');
+const gBookResults = ref<Book[]>([]);
+const gBookSelectorActive = ref(false);
+const startingBook = ref<Book>();
 
 // Array of API discovery doc URLs for APIs used by the quickstart
 const DISCOVERY_DOCS = [
@@ -159,6 +181,19 @@ async function saveNewBook(book: Book) {
     savingNewBook.value = false;
     newBookActive.value = false;
   }
+}
+
+async function searchExternal() {
+  const results = await fetchGoogleBooksJson('', '', searchText.value);
+  gBookResults.value = results;
+  gBookSelectorActive.value = true;
+}
+
+function selectBook(book: Book) {
+  gBookSelectorActive.value = false;
+  startingBook.value = book;
+  newBookActive.value = true;
+  searchText.value = '';
 }
 
 onMounted(() => {

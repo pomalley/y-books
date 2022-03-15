@@ -17,7 +17,9 @@
           style="width: 220px"
         >
           <q-card-section @click="click(book)" class="cursor-pointer">
-            <div class="text-subtitle1">{{ book.title }}</div>
+            <div class="text-subtitle1 ellipsis-2-lines">
+              {{ book.title }}<q-tooltip>{{ book.title }}</q-tooltip>
+            </div>
             <div v-if="book.authors" class="text-subtitle2">
               {{ book.authors }}
             </div>

@@ -6,10 +6,14 @@ export function googleBooksLink(id: string) {
   return `http://books.google.com/books?id=${id}&source=gbs_api`;
 }
 
-export async function fetchGoogleBooksJson(title: string, authors: string) {
-  if (!title && !authors) {
+export async function fetchGoogleBooksJson(
+  title: string,
+  authors: string,
+  general?: string
+) {
+  if (!title && !authors && !general) {
     return Promise.reject(
-      'Must specify title and/or author to query Google Books.'
+      'Must specify title, author, or general query to query Google Books.'
     );
   }
   let qString = '';
@@ -18,6 +22,9 @@ export async function fetchGoogleBooksJson(title: string, authors: string) {
   }
   if (authors) {
     qString += '+inauthor:' + encodeURIComponent(authors);
+  }
+  if (general) {
+    qString += encodeURIComponent(general);
   }
   const response = await fetchJson(
     'https://www.googleapis.com/books/v1/volumes?q=' + qString
