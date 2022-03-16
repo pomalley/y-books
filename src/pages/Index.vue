@@ -142,11 +142,12 @@ watch(
       .then(
         function (response) {
           var range = response.result;
-          if (range.values && range.values.length > 0) {
+          if (range.values !== undefined) {
             state.books = parseBooks(range.values as string[][], ROW_OFFSET);
             state.error = undefined;
           } else {
             state.error = 'no data found';
+            state.books = [];
           }
         },
         function (response) {

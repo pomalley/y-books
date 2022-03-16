@@ -19,17 +19,18 @@
           dense
           v-model="searchText"
           @keyup.enter="searchExternal"
+          @keyup.escape="searchText = ''"
           placeholder="Search"
         >
           <template v-slot:before>
             <q-icon name="search" v-if="!searchText" />
-            <q-btn
-              dense
-              v-if="searchText"
-              color="secondary"
-              @click="searchExternal"
-            >
+            <q-btn dense v-if="searchText" color="info" @click="searchExternal">
               <q-icon name="search" />
+            </q-btn>
+          </template>
+          <template v-slot:append>
+            <q-btn dense v-if="searchText" @click="searchText = ''">
+              <q-icon name="clear" />
             </q-btn>
           </template>
         </q-input>
@@ -52,9 +53,10 @@
           </q-btn>
         </q-item>
         <q-item><q-toggle v-model="showHidden" label="Show Hidden" /></q-item>
+        <q-separator inset />
         <q-item-label header>Sort</q-item-label>
         <q-item>
-          <q-btn :label="sort.by" color="positive">
+          <q-btn :label="sort.by" color="positive" class="full-width">
             <q-menu auto-close>
               <q-list>
                 <q-item
@@ -75,7 +77,7 @@
             :label="sort.desc ? 'DESC' : 'ASC'"
           />
         </q-item>
-        <q-separator />
+        <q-separator inset />
         <q-item>
           <q-btn
             label="New Book"
@@ -100,6 +102,22 @@
             class="full-width"
           >
             Sign Out
+          </q-btn>
+        </q-item>
+        <q-separator inset />
+        <q-item>
+          <q-btn
+            class="full-width"
+            color="primary"
+            target="_blank"
+            :href="`https://docs.google.com/spreadsheets/d/${sheetId}`"
+          >
+            Open Spreadsheet
+          </q-btn>
+        </q-item>
+        <q-item>
+          <q-btn class="full-width" color="primary" @click="changeSpreadsheet">
+            Change Spreadsheet
           </q-btn>
         </q-item>
       </q-list>
@@ -138,6 +156,7 @@ import { Book, Filter, Sort, SortBy } from 'components/models';
 import NewBook from 'components/NewBook.vue';
 import GBookSelector from 'src/components/GBookSelector.vue';
 import { fetchGoogleBooksJson } from 'src/components/googleBooks';
+import { useQuasar } from 'quasar';
 
 const leftDrawerOpen = ref(false);
 const signedIn = ref(false);
@@ -152,6 +171,7 @@ const gBookResults = ref<Book[]>([]);
 const gBookSelectorActive = ref(false);
 const startingBook = ref<Book>();
 const showHidden = ref(false);
+const $q = useQuasar();
 
 // Array of API discovery doc URLs for APIs used by the quickstart
 const DISCOVERY_DOCS = [
@@ -175,21 +195,37 @@ async function saveNewBook(book: Book) {
   const values: string[][] = [book.ToSpreadsheetRow(true, true)];
   try {
     await gapi.client.sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID,
+      spreadsheetId: sheetId.value,
       range: SUBSHEET,
       valueInputOption: 'USER_ENTERED',
       resource: {
         values: values,
       },
     });
+    const temp = sheetId.value;
     sheetId.value = '';
-    await nextTick(() => (sheetId.value = SHEET_ID));
+    await nextTick(() => (sheetId.value = temp));
   } catch (e) {
     console.log(e);
   } finally {
     savingNewBook.value = false;
     newBookActive.value = false;
   }
+}
+
+function changeSpreadsheet() {
+  $q.dialog({
+    title: 'Change Spreadsheet',
+    message:
+      'Enter spreadsheet id (i.e. https://docs.google.com/spreadsheets/d/<this id>/edit/)',
+    cancel: true,
+    ok: true,
+    prompt: {
+      model: sheetId.value,
+    },
+  }).onOk((newSheetId: string) => {
+    if (newSheetId != sheetId.value) sheetId.value = newSheetId;
+  });
 }
 
 async function searchExternal() {
