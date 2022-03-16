@@ -92,6 +92,29 @@
           >Search Again</q-btn
         >
       </q-card-actions>
+      <q-card-actions align="center">
+        <q-btn
+          :disable="!modelValue.book.title"
+          color="accent"
+          target="_blank"
+          :href="
+            'https://find.minlib.net/iii/encore/search/C__S' +
+            modelValue.book.title
+          "
+        >
+          Minlib Search
+          <q-tooltip v-if="!modelValue.book.title">requires title</q-tooltip>
+        </q-btn>
+        <q-btn
+          :disable="!modelValue.book.title"
+          color="accent"
+          target="_blank"
+          :href="`https://libbyapp.com/library/minuteman/search/query-${modelValue.book.title}/page-1`"
+        >
+          Libby Search
+          <q-tooltip v-if="!modelValue.book.title">requires title</q-tooltip>
+        </q-btn>
+      </q-card-actions>
       <q-card-section horizontal>
         <q-card-section class="col-6 q-pa-none text-center text-caption">
           Created: {{ displayTimestamp(modelValue.book.createdTimestamp) }}
