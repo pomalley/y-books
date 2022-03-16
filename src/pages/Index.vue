@@ -17,6 +17,7 @@
             <q-icon :name="readIcon(book)" />
             <q-icon name="none" />
             <q-icon :name="ownIcon(book)" />
+            <q-icon name="fas fa-ban" v-if="book.hidden" />
           </div>
         </q-item-section>
         <q-item-section class="col-md-4 col-6">
