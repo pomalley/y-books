@@ -118,7 +118,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineEmits, reactive, ref } from 'vue';
+import { reactive, ref } from 'vue';
 import { BookCardModel, ColumnName, Book } from 'components/models';
 import { iconName, iconTooltip } from './icons';
 import EditStringCardSection from 'components/EditStringCardSection.vue';

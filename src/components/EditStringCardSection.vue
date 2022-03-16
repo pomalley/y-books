@@ -23,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineEmits, defineProps, computed, ref } from 'vue';
+import { computed, ref } from 'vue';
 
 const emit = defineEmits(['edit']);
 
