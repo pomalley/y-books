@@ -12,19 +12,18 @@
         class="row justify-start"
         @click="itemClick(book.row || -1)"
       >
-        <q-item-section class="col-4">
-          {{ book.title }}
-        </q-item-section>
-        <q-item-section class="col-2">
-          {{ book.authors }}
-        </q-item-section>
-
-        <q-item-section class="col-1">
+        <q-item-section class="col-1 col-md-auto">
           <div class="row">
             <q-icon :name="readIcon(book)" />
             <q-icon name="none" />
             <q-icon :name="ownIcon(book)" />
           </div>
+        </q-item-section>
+        <q-item-section class="col-md-4 col-6">
+          {{ book.title }}
+        </q-item-section>
+        <q-item-section class="col-1 col-md-2">
+          {{ book.authors }}
         </q-item-section>
       </q-item>
     </q-list>
