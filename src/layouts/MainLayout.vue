@@ -214,6 +214,7 @@ const FIREBASE_DOC = 'info';
 
 watch(darkMode, (newDarkMode: boolean) => {
   $q.dark.set(newDarkMode);
+  localStorage.darkMode = Boolean(newDarkMode);
 });
 
 function toggleLeftDrawer() {
@@ -261,6 +262,9 @@ function selectBook(book: Book) {
 }
 
 onMounted(() => {
+  if (localStorage.darkMode) {
+    darkMode.value = Boolean(localStorage.darkMode);
+  }
   var gapiscript = document.createElement('script');
   gapiscript.setAttribute('src', 'https://apis.google.com/js/api.js');
   gapiscript.onload = () => handleClientLoad();
@@ -322,7 +326,6 @@ async function updateSigninStatus(isSignedIn: boolean) {
     const user = gapi.auth2.getAuthInstance().currentUser.get();
     const authResponse = user.getAuthResponse(true);
     oauthToken = authResponse.access_token;
-    console.log('Logged in: ', user.getBasicProfile().getEmail());
     await firebaseAuth(authResponse);
   } else {
     sheetId.value = '';
@@ -359,7 +362,6 @@ async function firebaseAuth(authResponse: gapi.auth2.AuthResponse) {
   userId = userCred.user.uid;
 
   try {
-    console.log('getting doc');
     const collectionRef = collection(db, userId);
     const snapshot = await getDoc(doc(collectionRef, FIREBASE_DOC));
     if (!snapshot.exists() || !snapshot.data()['spreadsheetId']) {
@@ -368,7 +370,7 @@ async function firebaseAuth(authResponse: gapi.auth2.AuthResponse) {
       sheetId.value = snapshot.data()['spreadsheetId'] as string;
     }
   } catch (e) {
-    console.log("Couldn't get existing doc:", e);
+    console.error("Couldn't get existing doc:", e);
     await writeNewDoc(db, userId, userCred.user.email || '');
   }
   if (!sheetId.value) {
@@ -377,7 +379,6 @@ async function firebaseAuth(authResponse: gapi.auth2.AuthResponse) {
 }
 
 async function writeNewDoc(db: Firestore, userId: string, email: string) {
-  console.log('Writing new doc');
   const collectionRef = collection(db, userId);
   await setDoc(doc(collectionRef, FIREBASE_DOC), {
     userId: userId,
