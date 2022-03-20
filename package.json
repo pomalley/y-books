@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@quasar/extras": "^1.13.0",
+    "@types/google.picker": "^0.0.39",
     "core-js": "^3.6.5",
     "quasar": "^2.0.0",
     "vue": "^3.0.0",

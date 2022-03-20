@@ -39,6 +39,8 @@
 
     <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
       <q-list>
+        <q-item><q-toggle v-model="darkMode" label="Dark Mode" /></q-item>
+        <q-separator inset />
         <q-item-label header> Filter </q-item-label>
         <q-item>
           <q-btn
@@ -150,7 +152,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted, nextTick } from 'vue';
+import { reactive, ref, onMounted, nextTick, watch } from 'vue';
 import { API_KEY, CLIENT_ID } from 'src/keys';
 import { Book, Filter, Sort, SortBy } from 'components/models';
 import NewBook from 'components/NewBook.vue';
@@ -171,7 +173,11 @@ const gBookResults = ref<Book[]>([]);
 const gBookSelectorActive = ref(false);
 const startingBook = ref<Book>();
 const showHidden = ref(false);
+const darkMode = ref(false);
 const $q = useQuasar();
+
+let pickerLoaded = false;
+let oauthToken = '';
 
 // Array of API discovery doc URLs for APIs used by the quickstart
 const DISCOVERY_DOCS = [
@@ -181,10 +187,16 @@ const DISCOVERY_DOCS = [
 // Authorization scopes required by the API; multiple scopes can be
 // included, separated by spaces.
 // const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
-const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+// add https://www.googleapis.com/auth/drive.readonly to show thumbnails in the picker?
+const SCOPES =
+  'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly';
 
 const SHEET_ID = '1U8Tyh6TuXj9JlFtD5JOHQNkn9f3_1YFq-65Nq0kSuyw';
 const SUBSHEET = 'Books';
+
+watch(darkMode, (newDarkMode: boolean) => {
+  $q.dark.set(newDarkMode);
+});
 
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value;
@@ -214,18 +226,7 @@ async function saveNewBook(book: Book) {
 }
 
 function changeSpreadsheet() {
-  $q.dialog({
-    title: 'Change Spreadsheet',
-    message:
-      'Enter spreadsheet id (i.e. https://docs.google.com/spreadsheets/d/<this id>/edit/)',
-    cancel: true,
-    ok: true,
-    prompt: {
-      model: sheetId.value,
-    },
-  }).onOk((newSheetId: string) => {
-    if (newSheetId != sheetId.value) sheetId.value = newSheetId;
-  });
+  createPicker();
 }
 
 async function searchExternal() {
@@ -250,6 +251,12 @@ onMounted(() => {
 
 function handleClientLoad() {
   gapi.load('client:auth2', initClient);
+  gapi.load('client:picker', initPicker);
+}
+
+function initPicker() {
+  pickerLoaded = true;
+  createPicker();
 }
 
 function initClient() {
@@ -262,11 +269,15 @@ function initClient() {
     })
     .then(
       function () {
-        // Listen for sign-in state changes.
         gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
-
-        // Handle the initial sign-in state.
         updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+
+        oauthToken = gapi.auth2
+          .getAuthInstance()
+          .currentUser.get()
+          .getAuthResponse().access_token;
+
+        createPicker();
       },
       function (error) {
         console.log(error);
@@ -275,13 +286,41 @@ function initClient() {
     );
 }
 
+function createPicker() {
+  if (pickerLoaded && oauthToken) {
+    var view = new google.picker.DocsView(google.picker.ViewId.DOCS);
+    // view.setMimeTypes('image/png,image/jpeg,image/jpg');
+    var picker = new google.picker.PickerBuilder()
+      .enableFeature(google.picker.Feature.MINE_ONLY)
+      .addViewGroup(
+        new google.picker.ViewGroup(google.picker.ViewId.SPREADSHEETS)
+      )
+      .setAppId(CLIENT_ID)
+      .setOAuthToken(oauthToken)
+      .addView(view)
+      .addView(new google.picker.DocsUploadView())
+      .setDeveloperKey(API_KEY)
+      .setCallback(pickerCallback)
+      .build();
+    picker.setVisible(true);
+  }
+}
+
+function pickerCallback(data: google.picker.ResponseObject) {
+  if (data.action == google.picker.Action.PICKED) {
+    var fileId: string = data.docs[0].id;
+    console.log(data);
+    sheetId.value = fileId;
+  }
+}
+
 function updateSigninStatus(isSignedIn: boolean) {
   signedIn.value = isSignedIn;
-  if (isSignedIn) {
-    sheetId.value = SHEET_ID;
-  } else {
-    sheetId.value = '';
-  }
+  // if (isSignedIn) {
+  //   sheetId.value = SHEET_ID;
+  // } else {
+  //   sheetId.value = '';
+  // }
 }
 
 function handleAuthClick() {
