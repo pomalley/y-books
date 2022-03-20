@@ -159,6 +159,21 @@ import NewBook from 'components/NewBook.vue';
 import GBookSelector from 'src/components/GBookSelector.vue';
 import { fetchGoogleBooksJson } from 'src/components/googleBooks';
 import { useQuasar } from 'quasar';
+import { FirebaseApp, initializeApp } from 'firebase/app';
+import {
+  getFirestore,
+  collection,
+  doc,
+  getDoc,
+  setDoc,
+  Firestore,
+  updateDoc,
+} from 'firebase/firestore';
+import {
+  GoogleAuthProvider,
+  signInWithCredential,
+  getAuth,
+} from 'firebase/auth';
 
 const leftDrawerOpen = ref(false);
 const signedIn = ref(false);
@@ -178,6 +193,8 @@ const $q = useQuasar();
 
 let pickerLoaded = false;
 let oauthToken = '';
+let userId = '';
+let firebaseApp: FirebaseApp | null = null;
 
 // Array of API discovery doc URLs for APIs used by the quickstart
 const DISCOVERY_DOCS = [
@@ -191,8 +208,9 @@ const DISCOVERY_DOCS = [
 const SCOPES =
   'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly';
 
-const SHEET_ID = '1U8Tyh6TuXj9JlFtD5JOHQNkn9f3_1YFq-65Nq0kSuyw';
 const SUBSHEET = 'Books';
+
+const FIREBASE_DOC = 'info';
 
 watch(darkMode, (newDarkMode: boolean) => {
   $q.dark.set(newDarkMode);
@@ -250,46 +268,29 @@ onMounted(() => {
 });
 
 function handleClientLoad() {
-  gapi.load('client:auth2', initClient);
-  gapi.load('client:picker', initPicker);
+  gapi.load('client:auth2', () => void initClient());
+  gapi.load('client:picker', () => (pickerLoaded = true));
 }
 
-function initPicker() {
-  pickerLoaded = true;
-  createPicker();
-}
-
-function initClient() {
-  gapi.client
-    .init({
+async function initClient() {
+  try {
+    await gapi.client.init({
       apiKey: API_KEY,
       clientId: CLIENT_ID,
       discoveryDocs: DISCOVERY_DOCS,
       scope: SCOPES,
-    })
-    .then(
-      function () {
-        gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
-        updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
-
-        oauthToken = gapi.auth2
-          .getAuthInstance()
-          .currentUser.get()
-          .getAuthResponse().access_token;
-
-        createPicker();
-      },
-      function (error) {
-        console.log(error);
-        gapiError.value = 'Failed to init gapi';
-      }
-    );
+    });
+    gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
+    await updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+  } catch (error) {
+    console.log(error);
+    gapiError.value = 'Failed to init gapi';
+  }
 }
 
 function createPicker() {
   if (pickerLoaded && oauthToken) {
     var view = new google.picker.DocsView(google.picker.ViewId.DOCS);
-    // view.setMimeTypes('image/png,image/jpeg,image/jpg');
     var picker = new google.picker.PickerBuilder()
       .enableFeature(google.picker.Feature.MINE_ONLY)
       .addViewGroup(
@@ -311,16 +312,22 @@ function pickerCallback(data: google.picker.ResponseObject) {
     var fileId: string = data.docs[0].id;
     console.log(data);
     sheetId.value = fileId;
+    void saveSheetId();
   }
 }
 
-function updateSigninStatus(isSignedIn: boolean) {
+async function updateSigninStatus(isSignedIn: boolean) {
   signedIn.value = isSignedIn;
-  // if (isSignedIn) {
-  //   sheetId.value = SHEET_ID;
-  // } else {
-  //   sheetId.value = '';
-  // }
+  if (isSignedIn) {
+    const user = gapi.auth2.getAuthInstance().currentUser.get();
+    const authResponse = user.getAuthResponse(true);
+    oauthToken = authResponse.access_token;
+    console.log('Logged in: ', user.getBasicProfile().getEmail());
+    await firebaseAuth(authResponse);
+  } else {
+    sheetId.value = '';
+    oauthToken = '';
+  }
 }
 
 function handleAuthClick() {
@@ -329,5 +336,63 @@ function handleAuthClick() {
 
 function handleSignoutClick() {
   gapi.auth2.getAuthInstance().signOut();
+}
+
+async function firebaseAuth(authResponse: gapi.auth2.AuthResponse) {
+  const firebaseConfig = {
+    apiKey: API_KEY,
+    authDomain: 'y-books.firebaseapp.com',
+    projectId: 'y-books',
+    storageBucket: 'y-books.appspot.com',
+    messagingSenderId: '738811460084',
+    appId: '1:738811460084:web:abf15a64100480b9afa1a1',
+  };
+
+  firebaseApp = initializeApp(firebaseConfig);
+  const db = getFirestore(firebaseApp);
+
+  const cred = GoogleAuthProvider.credential(
+    authResponse.id_token,
+    authResponse.access_token
+  );
+  const userCred = await signInWithCredential(getAuth(firebaseApp), cred);
+  userId = userCred.user.uid;
+
+  try {
+    console.log('getting doc');
+    const collectionRef = collection(db, userId);
+    const snapshot = await getDoc(doc(collectionRef, FIREBASE_DOC));
+    if (!snapshot.exists() || !snapshot.data()['spreadsheetId']) {
+      await writeNewDoc(db, userId, userCred.user.email || '');
+    } else {
+      sheetId.value = snapshot.data()['spreadsheetId'] as string;
+    }
+  } catch (e) {
+    console.log("Couldn't get existing doc:", e);
+    await writeNewDoc(db, userId, userCred.user.email || '');
+  }
+  if (!sheetId.value) {
+    createPicker();
+  }
+}
+
+async function writeNewDoc(db: Firestore, userId: string, email: string) {
+  console.log('Writing new doc');
+  const collectionRef = collection(db, userId);
+  await setDoc(doc(collectionRef, FIREBASE_DOC), {
+    userId: userId,
+    email: email,
+    spreadsheetId: null,
+  });
+}
+
+async function saveSheetId() {
+  if (!firebaseApp || !userId) {
+    console.error('Unable to save sheet id without firebase auth.');
+    return;
+  }
+  await updateDoc(doc(getFirestore(firebaseApp), userId, FIREBASE_DOC), {
+    spreadsheetId: sheetId.value,
+  });
 }
 </script>
