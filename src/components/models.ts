@@ -155,6 +155,7 @@ export enum SortBy {
   TITLE = 'Title',
   CREATED = 'Creation Time',
   UPDATED = 'Last Updated',
+  DATE_READ = 'Date Read',
 }
 
 export interface Sort {

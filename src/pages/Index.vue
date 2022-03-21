@@ -123,6 +123,15 @@ const sortedBooks = computed(() => {
         return a.createdTimestamp < b.createdTimestamp != props.sort.desc
           ? -1
           : 1;
+      case SortBy.DATE_READ:
+        // Sort by date read, breaking ties by whether it is read.
+        const a_date = a.dateRead || '';
+        const b_date = b.dateRead || '';
+        if (a_date === b_date)
+          return (a.read || false) < (b.read || false) != props.sort.desc
+            ? -1
+            : 1;
+        return a_date < b_date != props.sort.desc ? -1 : 1;
     }
   });
 });
