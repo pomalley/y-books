@@ -38,9 +38,11 @@ See [Configuring quasar.conf.js](https://quasar.dev/quasar-cli/quasar-conf-js).
 
 ### Secrets
 
-Add a file (not in version control) called `src/keys.ts` with:
+Add two files (not in version control) called `src/keys.ts` and `src/dev_keys.ts` with:
 
 ```typescript
 export const API_KEY = '<google cloud project api key>';
 export const CLIENT_ID = '<google cloud project client id>';
 ```
+
+The dev keys should allow HTTP origins of `localhost:3000` (for example) and the prod keys should allow the actual origins.

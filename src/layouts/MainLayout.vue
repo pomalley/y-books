@@ -195,6 +195,8 @@ let pickerLoaded = false;
 let oauthToken = '';
 let userId = '';
 let firebaseApp: FirebaseApp | null = null;
+let apiKey = API_KEY;
+let clientId = CLIENT_ID;
 
 // Array of API discovery doc URLs for APIs used by the quickstart
 const DISCOVERY_DOCS = [
@@ -277,10 +279,16 @@ function handleClientLoad() {
 }
 
 async function initClient() {
+  if (process.env.DEV) {
+    const module = await import('src/dev_keys');
+    apiKey = module.API_KEY;
+    clientId = module.CLIENT_ID;
+    console.log('Using dev keys.');
+  }
   try {
     await gapi.client.init({
-      apiKey: API_KEY,
-      clientId: CLIENT_ID,
+      apiKey: apiKey,
+      clientId: clientId,
       discoveryDocs: DISCOVERY_DOCS,
       scope: SCOPES,
     });
@@ -300,11 +308,11 @@ function createPicker() {
       .addViewGroup(
         new google.picker.ViewGroup(google.picker.ViewId.SPREADSHEETS)
       )
-      .setAppId(CLIENT_ID)
+      .setAppId(clientId)
       .setOAuthToken(oauthToken)
       .addView(view)
       .addView(new google.picker.DocsUploadView())
-      .setDeveloperKey(API_KEY)
+      .setDeveloperKey(apiKey)
       .setCallback(pickerCallback)
       .build();
     picker.setVisible(true);
@@ -343,7 +351,7 @@ function handleSignoutClick() {
 
 async function firebaseAuth(authResponse: gapi.auth2.AuthResponse) {
   const firebaseConfig = {
-    apiKey: API_KEY,
+    apiKey: apiKey,
     authDomain: 'y-books.firebaseapp.com',
     projectId: 'y-books',
     storageBucket: 'y-books.appspot.com',
