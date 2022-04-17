@@ -95,7 +95,7 @@
             color="warning"
             class="full-width"
           >
-            Authorize
+            Sign In / Authorize
           </q-btn>
           <q-btn
             v-if="signedIn"
@@ -207,8 +207,7 @@ const DISCOVERY_DOCS = [
 // included, separated by spaces.
 // const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 // add https://www.googleapis.com/auth/drive.readonly to show thumbnails in the picker?
-const SCOPES =
-  'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
 const SUBSHEET = 'Books';
 
@@ -334,10 +333,12 @@ async function updateSigninStatus(isSignedIn: boolean) {
     const user = gapi.auth2.getAuthInstance().currentUser.get();
     const authResponse = user.getAuthResponse(true);
     oauthToken = authResponse.access_token;
+    gapiError.value = '';
     await firebaseAuth(authResponse);
   } else {
     sheetId.value = '';
     oauthToken = '';
+    gapiError.value = 'Not Signed In';
   }
 }
 

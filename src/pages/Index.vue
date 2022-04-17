@@ -1,9 +1,16 @@
 <template>
   <q-page class="col items-center justify-evenly">
-    <span v-if="props.error || state.error">
+    <div v-if="props.error || state.error" class="q-ma-xl text-h4 text-center">
       {{ props.error }} {{ state.error }}
-    </span>
-    <q-list bordered separator class="rounded-borders">
+    </div>
+    <q-spinner-ball
+      v-if="state.loading && !props.error && !state.error"
+      size="xl"
+      color="primary"
+      class="q-ma-xl"
+      style="width: 100%"
+    />
+    <q-list v-if="!state.loading" bordered separator class="rounded-borders">
       <q-item
         v-for="book in sortedBooks"
         :key="book.row"
@@ -41,10 +48,12 @@ interface State {
   books: Book[];
   bookCardModel: BookCardModel;
   error?: string;
+  loading: boolean;
 }
 const state: State = reactive({
   books: [],
   bookCardModel: { active: false, book: new Book(-1, []) },
+  loading: true,
 });
 
 const props = defineProps<{
@@ -139,6 +148,7 @@ const sortedBooks = computed(() => {
 watch(
   () => props.sheetId,
   (newSheetId: string) => {
+    state.loading = true;
     if (!newSheetId) {
       state.books = [];
       return;
@@ -151,6 +161,7 @@ watch(
       .then(
         function (response) {
           var range = response.result;
+          state.loading = false;
           if (range.values !== undefined) {
             state.books = parseBooks(range.values as string[][], ROW_OFFSET);
             state.error = undefined;
@@ -160,6 +171,7 @@ watch(
           }
         },
         function (response) {
+          state.loading = false;
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           state.error = String(response.result.error.message);
         }
