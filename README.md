@@ -2,7 +2,7 @@
 
 This is a simple web app for using a Google Sheet to track books you have read and want to read.
 
-The live version is at https.://y-books.appspot.com.
+The live version is at https://y-books.appspot.com.
 
 ## How To Use
 
