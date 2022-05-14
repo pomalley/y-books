@@ -13,6 +13,15 @@
 
         <q-toolbar-title> y-books </q-toolbar-title>
 
+        <a
+          href="https://github.com/pomalley/y-books#readme"
+          target="_blank"
+          style="text-decoration: inherit; color: inherit"
+        >
+          <q-icon name="help" size="sm" class="q-mx-sm">
+            <q-tooltip>What is this?</q-tooltip>
+          </q-icon>
+        </a>
         <q-input
           standout
           dark
@@ -205,8 +214,9 @@ const DISCOVERY_DOCS = [
 
 // Authorization scopes required by the API; multiple scopes can be
 // included, separated by spaces.
-// const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
-// add https://www.googleapis.com/auth/drive.readonly to show thumbnails in the picker?
+// Add https://www.googleapis.com/auth/drive.readonly to be able to show
+// thumbnails in the picker, at the cost of a much more expansive
+// set of permissions.
 const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
 const SUBSHEET = 'Books';

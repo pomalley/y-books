@@ -8,7 +8,7 @@ The live version is at https://y-books.appspot.com.
 
 ### Set up the spreadsheet
 
-1. Copy the [template sheet](https://docs.google.com/spreadsheets/d/1-4QPvyEsRR2MW13ctPwPsARbF705kgAux2riIYolKpA/edit?usp=sharing) to your own drive. 
+1. Copy the [template sheet](https://docs.google.com/spreadsheets/d/1-4QPvyEsRR2MW13ctPwPsARbF705kgAux2riIYolKpA/edit?usp=sharing) to your own drive.
 2. In the app, click `Sign In / Authorize`; the app needs permission to change "Files opened with the app" (i.e. the backing spreadsheet).
 3. If the "Select a File" dialog doesn't come up, click `Change Spreadsheet`.
 4. Choose the copy of the template made in step 1.
@@ -48,3 +48,7 @@ service cloud.firestore {
   }
 }
 ```
+
+### Deploy to Google Cloud
+
+`gcloud app deploy` should do it, as `app.yaml` is configured to serve from the dist/spa directory.
