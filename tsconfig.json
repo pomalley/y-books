@@ -1,7 +1,8 @@
 {
-  "extends": "@quasar/app/tsconfig-preset",
+  "extends": "@quasar/app-webpack/tsconfig-preset",
   "compilerOptions": {
     "baseUrl": ".",
-    "types": ["gapi", "gapi.auth2", "gapi.client.sheets", "google.picker"]
+    "lib": ["es2015", "DOM"],
+    "types": ["gapi", "gapi.client.sheets", "google.picker", "google.accounts"]
   }
 }

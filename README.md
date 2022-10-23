@@ -21,7 +21,7 @@ Click the "New Book" button and set the title and author(s) by clicking on e.g. 
 
 ## Technical Details
 
-This is a fairly simple web app based on the [Quasar](https://quasar.dev/) framework. It is hosted on Google cloud and should fit comfortably into "free-tier" resources (i.e. cost nothing to run). To host your own version, create a Google cloud project, and enable the Google Sheets and Picker api (maybe some others, I don't remember exactly). Add a Cloud Firestore database to it (used only to record the backing sheet ID for each user).
+This is a fairly simple web app based on the [Quasar](https://quasar.dev/) framework. It is hosted on Google cloud and should fit comfortably into "free-tier" resources (i.e. cost nothing to run). To host your own version, create a Google cloud project, and enable the Google Sheets and Picker api (maybe some others, I don't remember exactly).
 
 ### Secrets
 
@@ -34,20 +34,9 @@ export const CLIENT_ID = '<google cloud project client id>';
 
 In addition to the sheets and picker APIs, the dev keys should allow HTTP origins of `localhost:3000` (for example) and the prod keys should allow the actual origins.
 
-### Firestore database access rules
+### Firebase
 
-Each user is only allowed to read/write db entries matching their user id.
-
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /{userid}/{document=**} {
-      allow read, write: if request.auth != null  && request.auth.uid == userid;
-    }
-  }
-}
-```
+Earlier versions of this app used firebase to store the sheet id (per user). This was silly, and it is now kept in the browser's local storage. (This means for every new device, you must select the sheet.)
 
 ### Deploy to Google Cloud
 

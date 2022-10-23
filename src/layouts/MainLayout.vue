@@ -163,30 +163,15 @@
 <script setup lang="ts">
 import { reactive, ref, onMounted, nextTick, watch } from 'vue';
 import { API_KEY, CLIENT_ID } from 'src/keys';
-import { Book, Filter, Sort, SortBy } from 'components/models';
+import { Book, Filter, Sort, SortBy } from 'src/components/models';
 import NewBook from 'components/NewBook.vue';
 import GBookSelector from 'src/components/GBookSelector.vue';
 import { fetchGoogleBooksJson } from 'src/components/googleBooks';
 import { useQuasar } from 'quasar';
-import { FirebaseApp, initializeApp } from 'firebase/app';
-import {
-  getFirestore,
-  collection,
-  doc,
-  getDoc,
-  setDoc,
-  Firestore,
-  updateDoc,
-} from 'firebase/firestore';
-import {
-  GoogleAuthProvider,
-  signInWithCredential,
-  getAuth,
-} from 'firebase/auth';
 
 const leftDrawerOpen = ref(false);
 const signedIn = ref(false);
-const gapiError = ref('');
+const gapiError = ref('Not Signed In');
 const sheetId = ref('');
 const sort: Sort = reactive({ by: SortBy.CREATED, desc: true });
 const filter = ref(Filter.NONE);
@@ -202,10 +187,9 @@ const $q = useQuasar();
 
 let pickerLoaded = false;
 let oauthToken = '';
-let userId = '';
-let firebaseApp: FirebaseApp | null = null;
 let apiKey = API_KEY;
 let clientId = CLIENT_ID;
+let gisClient: google.accounts.oauth2.TokenClient | null = null;
 
 // Array of API discovery doc URLs for APIs used by the quickstart
 const DISCOVERY_DOCS = [
@@ -220,8 +204,6 @@ const DISCOVERY_DOCS = [
 const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
 const SUBSHEET = 'Books';
-
-const FIREBASE_DOC = 'info';
 
 watch(darkMode, (newDarkMode: boolean) => {
   $q.dark.set(newDarkMode);
@@ -248,7 +230,7 @@ async function saveNewBook(book: Book) {
     sheetId.value = '';
     await nextTick(() => (sheetId.value = temp));
   } catch (e) {
-    console.log(e);
+    console.error('Failed to save book:', e);
   } finally {
     savingNewBook.value = false;
     newBookActive.value = false;
@@ -279,12 +261,21 @@ onMounted(() => {
   var gapiscript = document.createElement('script');
   gapiscript.setAttribute('src', 'https://apis.google.com/js/api.js');
   gapiscript.onload = () => handleClientLoad();
+  gapiscript.async = false;
   document.head.appendChild(gapiscript);
+  var gisScript = document.createElement('script');
+  gisScript.setAttribute('src', 'https://accounts.google.com/gsi/client');
+  gisScript.onload = () => initClient();
+  gisScript.async = false;
+  document.head.appendChild(gisScript);
 });
 
-function handleClientLoad() {
-  gapi.load('client:auth2', () => void initClient());
-  gapi.load('client:picker', () => (pickerLoaded = true));
+async function handleClientLoad() {
+  await new Promise((resolve, reject) =>
+    gapi.load('client:picker', { callback: resolve, onerror: reject })
+  );
+  pickerLoaded = true;
+  await gapi.client.init({ discoveryDocs: DISCOVERY_DOCS });
 }
 
 async function initClient() {
@@ -294,19 +285,30 @@ async function initClient() {
     clientId = module.CLIENT_ID;
     console.log('Using dev keys.');
   }
-  try {
-    await gapi.client.init({
-      apiKey: apiKey,
-      clientId: clientId,
-      discoveryDocs: DISCOVERY_DOCS,
-      scope: SCOPES,
-    });
-    gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
-    await updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
-  } catch (error) {
-    console.log(error);
-    gapiError.value = 'Failed to init gapi';
-  }
+  await new Promise<void>((resolve, reject) => {
+    try {
+      gisClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: SCOPES,
+        prompt: 'consent',
+        callback: (response) => {
+          if (response.error) {
+            console.error('Failed to get OAuth token:', response);
+            oauthToken = '';
+            updateSigninStatus(false);
+          } else {
+            oauthToken = response.access_token;
+            updateSigninStatus(true);
+          }
+        },
+      });
+      resolve();
+    } catch (error) {
+      console.error('Failure initializing token client:', error);
+      gapiError.value = 'Failed to init gapi';
+      reject(error);
+    }
+  });
 }
 
 function createPicker() {
@@ -331,88 +333,33 @@ function createPicker() {
 function pickerCallback(data: google.picker.ResponseObject) {
   if (data.action == google.picker.Action.PICKED) {
     var fileId: string = data.docs[0].id;
-    console.log(data);
     sheetId.value = fileId;
-    void saveSheetId();
+    localStorage.sheetId = fileId;
   }
 }
 
-async function updateSigninStatus(isSignedIn: boolean) {
+function updateSigninStatus(isSignedIn: boolean) {
   signedIn.value = isSignedIn;
   if (isSignedIn) {
-    const user = gapi.auth2.getAuthInstance().currentUser.get();
-    const authResponse = user.getAuthResponse(true);
-    oauthToken = authResponse.access_token;
-    gapiError.value = '';
-    await firebaseAuth(authResponse);
+    if (localStorage.sheetId) {
+      sheetId.value = String(localStorage.sheetId);
+      gapiError.value = '';
+    } else {
+      gapiError.value = 'No Sheet Selected';
+    }
   } else {
     sheetId.value = '';
-    oauthToken = '';
     gapiError.value = 'Not Signed In';
   }
 }
 
 function handleAuthClick() {
-  void gapi.auth2.getAuthInstance().signIn();
+  gisClient?.requestAccessToken();
 }
 
 function handleSignoutClick() {
-  gapi.auth2.getAuthInstance().signOut();
-}
-
-async function firebaseAuth(authResponse: gapi.auth2.AuthResponse) {
-  const firebaseConfig = {
-    apiKey: apiKey,
-    authDomain: 'y-books.firebaseapp.com',
-    projectId: 'y-books',
-    storageBucket: 'y-books.appspot.com',
-    messagingSenderId: '738811460084',
-    appId: '1:738811460084:web:abf15a64100480b9afa1a1',
-  };
-
-  firebaseApp = initializeApp(firebaseConfig);
-  const db = getFirestore(firebaseApp);
-
-  const cred = GoogleAuthProvider.credential(
-    authResponse.id_token,
-    authResponse.access_token
-  );
-  const userCred = await signInWithCredential(getAuth(firebaseApp), cred);
-  userId = userCred.user.uid;
-
-  try {
-    const collectionRef = collection(db, userId);
-    const snapshot = await getDoc(doc(collectionRef, FIREBASE_DOC));
-    if (!snapshot.exists() || !snapshot.data()['spreadsheetId']) {
-      await writeNewDoc(db, userId, userCred.user.email || '');
-    } else {
-      sheetId.value = snapshot.data()['spreadsheetId'] as string;
-    }
-  } catch (e) {
-    console.error("Couldn't get existing doc:", e);
-    await writeNewDoc(db, userId, userCred.user.email || '');
-  }
-  if (!sheetId.value) {
-    createPicker();
-  }
-}
-
-async function writeNewDoc(db: Firestore, userId: string, email: string) {
-  const collectionRef = collection(db, userId);
-  await setDoc(doc(collectionRef, FIREBASE_DOC), {
-    userId: userId,
-    email: email,
-    spreadsheetId: null,
-  });
-}
-
-async function saveSheetId() {
-  if (!firebaseApp || !userId) {
-    console.error('Unable to save sheet id without firebase auth.');
-    return;
-  }
-  await updateDoc(doc(getFirestore(firebaseApp), userId, FIREBASE_DOC), {
-    spreadsheetId: sheetId.value,
+  google.accounts.oauth2.revoke(oauthToken, () => {
+    updateSigninStatus(false);
   });
 }
 </script>
