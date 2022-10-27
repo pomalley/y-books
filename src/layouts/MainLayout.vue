@@ -122,6 +122,7 @@
             color="primary"
             target="_blank"
             :href="`https://docs.google.com/spreadsheets/d/${sheetId}`"
+            :enabled="signedIn && sheetId"
           >
             Open Spreadsheet
           </q-btn>
@@ -131,13 +132,17 @@
             Change Spreadsheet
           </q-btn>
         </q-item>
+        <q-item>
+          <div id="googleSignIn"></div>
+        </q-item>
       </q-list>
     </q-drawer>
 
     <q-page-container>
+      <div v-if="gapiError">{{ gapiError }}</div>
       <router-view
-        :error="gapiError"
         :sheet-id="sheetId"
+        :sheet-data="sheetData"
         :sort="sort"
         :filter="filter"
         :searchText="searchText"
@@ -173,6 +178,7 @@ const leftDrawerOpen = ref(false);
 const signedIn = ref(false);
 const gapiError = ref('Not Signed In');
 const sheetId = ref('');
+const sheetData = ref<string[][]>([]);
 const sort: Sort = reactive({ by: SortBy.CREATED, desc: true });
 const filter = ref(Filter.NONE);
 const newBookActive = ref(false);
@@ -186,7 +192,6 @@ const darkMode = ref(false);
 const $q = useQuasar();
 
 let pickerLoaded = false;
-let oauthToken = '';
 let apiKey = API_KEY;
 let clientId = CLIENT_ID;
 let gisClient: google.accounts.oauth2.TokenClient | null = null;
@@ -270,12 +275,54 @@ onMounted(() => {
   document.head.appendChild(gisScript);
 });
 
+let gapiLoadOk: (v?: unknown) => void, gapiLoadFail: (reason?: unknown) => void;
+const gapiLoadPromise = new Promise((resolve, reject) => {
+  gapiLoadOk = resolve;
+  gapiLoadFail = reject;
+});
+
+watch(sheetId, async (newSheetId: string) => {
+  await gapiLoadPromise;
+  gapi.client.sheets.spreadsheets.values
+    .get({
+      spreadsheetId: newSheetId,
+      range: 'Books!A2:O',
+    })
+    .then(function (response) {
+      var range = response.result;
+      if (range.values !== undefined) {
+        sheetData.value = range.values as string[][];
+      } else {
+        console.error('no sheet data found');
+        sheetData.value = [];
+      }
+    })
+    .catch((err) => {
+      updateSigninStatus(false);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (err.result.error.code == 401 || err.result.error.code == 403) {
+        gisClient?.requestAccessToken();
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        // state.error = String(response.result.error.message);
+        console.error(err);
+        sheetId.value = '';
+      }
+    });
+});
+
 async function handleClientLoad() {
-  await new Promise((resolve, reject) =>
-    gapi.load('client:picker', { callback: resolve, onerror: reject })
-  );
-  pickerLoaded = true;
-  await gapi.client.init({ discoveryDocs: DISCOVERY_DOCS });
+  try {
+    await new Promise((resolve, reject) =>
+      gapi.load('client:picker', { callback: resolve, onerror: reject })
+    );
+    pickerLoaded = true;
+    await gapi.client.init({ discoveryDocs: DISCOVERY_DOCS });
+    console.log('initted');
+    gapiLoadOk();
+  } catch (e) {
+    gapiLoadFail();
+  }
 }
 
 async function initClient() {
@@ -294,10 +341,10 @@ async function initClient() {
         callback: (response) => {
           if (response.error) {
             console.error('Failed to get OAuth token:', response);
-            oauthToken = '';
+            localStorage.oauthToken = undefined;
             updateSigninStatus(false);
           } else {
-            oauthToken = response.access_token;
+            localStorage.oauthToken = response.access_token;
             updateSigninStatus(true);
           }
         },
@@ -309,10 +356,16 @@ async function initClient() {
       reject(error);
     }
   });
+  if (localStorage.oauthToken) {
+    gapi.client.setToken({ access_token: String(localStorage.oauthToken) });
+    updateSigninStatus(true);
+  } else {
+    updateSigninStatus(false);
+  }
 }
 
 function createPicker() {
-  if (pickerLoaded && oauthToken) {
+  if (pickerLoaded && localStorage.oauthToken) {
     var view = new google.picker.DocsView(google.picker.ViewId.DOCS);
     var picker = new google.picker.PickerBuilder()
       .enableFeature(google.picker.Feature.MINE_ONLY)
@@ -320,7 +373,7 @@ function createPicker() {
         new google.picker.ViewGroup(google.picker.ViewId.SPREADSHEETS)
       )
       .setAppId(clientId)
-      .setOAuthToken(oauthToken)
+      .setOAuthToken(String(localStorage.oauthToken))
       .addView(view)
       .addView(new google.picker.DocsUploadView())
       .setDeveloperKey(apiKey)
@@ -358,8 +411,9 @@ function handleAuthClick() {
 }
 
 function handleSignoutClick() {
-  google.accounts.oauth2.revoke(oauthToken, () => {
+  google.accounts.oauth2.revoke(String(localStorage.oauthToken), () => {
     updateSigninStatus(false);
+    localStorage.oauthToken = undefined;
   });
 }
 </script>

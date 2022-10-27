@@ -1,16 +1,6 @@
 <template>
   <q-page class="col items-center justify-evenly">
-    <div v-if="props.error || state.error" class="q-ma-xl text-h4 text-center">
-      {{ props.error }} {{ state.error }}
-    </div>
-    <q-spinner-ball
-      v-if="state.loading && !props.error && !state.error"
-      size="xl"
-      color="primary"
-      class="q-ma-xl"
-      style="width: 100%"
-    />
-    <q-list v-if="!state.loading" bordered separator class="rounded-borders">
+    <q-list bordered separator class="rounded-borders">
       <q-item
         v-for="book in sortedBooks"
         :key="book.row"
@@ -47,18 +37,16 @@ import { Book, BookCardModel, Sort, SortBy, Filter } from 'components/models';
 interface State {
   books: Book[];
   bookCardModel: BookCardModel;
-  error?: string;
-  loading: boolean;
 }
+
 const state: State = reactive({
   books: [],
   bookCardModel: { active: false, book: new Book(-1, []) },
-  loading: true,
 });
 
 const props = defineProps<{
+  sheetData: string[][];
   sheetId: string;
-  error: string;
   sort: Sort;
   filter: Filter;
   searchText: string;
@@ -146,36 +134,13 @@ const sortedBooks = computed(() => {
 });
 
 watch(
-  () => props.sheetId,
-  (newSheetId: string) => {
-    state.loading = true;
-    if (!newSheetId) {
+  () => props.sheetData,
+  (newSheetData: string[][]) => {
+    if (!newSheetData) {
       state.books = [];
       return;
     }
-    gapi.client.sheets.spreadsheets.values
-      .get({
-        spreadsheetId: newSheetId,
-        range: 'Books!A2:O',
-      })
-      .then(
-        function (response) {
-          var range = response.result;
-          state.loading = false;
-          if (range.values !== undefined) {
-            state.books = parseBooks(range.values as string[][], ROW_OFFSET);
-            state.error = undefined;
-          } else {
-            state.error = 'no data found';
-            state.books = [];
-          }
-        },
-        function (response) {
-          state.loading = false;
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          state.error = String(response.result.error.message);
-        }
-      );
+    state.books = parseBooks(newSheetData, ROW_OFFSET);
   }
 );
 </script>

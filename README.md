@@ -40,4 +40,4 @@ Earlier versions of this app used firebase to store the sheet id (per user). Thi
 
 ### Deploy to Google Cloud
 
-`gcloud app deploy` should do it, as `app.yaml` is configured to serve from the dist/spa directory.
+`quasar build` followed by `gcloud app deploy` should do it, as `app.yaml` is configured to serve from the dist/spa directory.
