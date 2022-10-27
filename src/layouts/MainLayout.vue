@@ -318,7 +318,6 @@ async function handleClientLoad() {
     );
     pickerLoaded = true;
     await gapi.client.init({ discoveryDocs: DISCOVERY_DOCS });
-    console.log('initted');
     gapiLoadOk();
   } catch (e) {
     gapiLoadFail();
