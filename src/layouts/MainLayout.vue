@@ -331,6 +331,7 @@ async function initClient() {
     clientId = module.CLIENT_ID;
     console.log('Using dev keys.');
   }
+  await gapiLoadPromise;
   await new Promise<void>((resolve, reject) => {
     try {
       gisClient = google.accounts.oauth2.initTokenClient({
