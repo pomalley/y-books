@@ -10,6 +10,8 @@ export function iconName(type: ColumnName, book: Book): string {
       return book.owned ? 'fas fa-book-medical' : 'la la-book-medical';
     case ColumnName.WANT_TO_OWN:
       return book.wantToOwn ? 'fas fa-coins' : 'la la-coins';
+    case ColumnName.STARRED:
+      return book.starred ? 'fas fa-star' : 'far fa-star';
     default:
       return 'none';
   }
@@ -25,6 +27,8 @@ export function iconTooltip(type: ColumnName, book: Book): string {
       return book.owned ? 'Owned' : 'Not Owned';
     case ColumnName.WANT_TO_OWN:
       return book.wantToOwn ? 'Want to Own' : 'Do Not Want To Own';
+    case ColumnName.STARRED:
+      return book.starred ? 'Starred' : 'Not Starred';
     default:
       return 'Uh Oh!';
   }

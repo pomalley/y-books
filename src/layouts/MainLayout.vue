@@ -51,14 +51,12 @@
         <q-item><q-toggle v-model="darkMode" label="Dark Mode" /></q-item>
         <q-separator inset />
         <q-item-label header> Filter </q-item-label>
-        <q-item>
+        <q-item v-for="f in Filter" :key="f" class="q-pa-xs">
           <q-btn
             color="info"
             :outline="filter !== f"
-            v-for="f in Filter"
-            :key="f"
             @click="filter = f"
-            class="q-mx-xs"
+            class="full-width"
           >
             {{ f }}
           </q-btn>
@@ -286,7 +284,7 @@ watch(sheetId, async (newSheetId: string) => {
   gapi.client.sheets.spreadsheets.values
     .get({
       spreadsheetId: newSheetId,
-      range: 'Books!A2:O',
+      range: 'Books!A2:P',
     })
     .then(function (response) {
       var range = response.result;

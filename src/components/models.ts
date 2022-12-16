@@ -15,6 +15,7 @@ export enum ColumnName {
   COMMENTS = 'M',
   CREATED_TIMESTAMP = 'N',
   UPDATED_TIMESTAMP = 'O',
+  STARRED = 'P',
 }
 
 export class Book {
@@ -34,10 +35,11 @@ export class Book {
   comments?: string;
   createdTimestamp!: number;
   updatedTimestamp!: number;
+  starred?: boolean;
 
   constructor(row: number, sheetData: string[]) {
     this.row = row;
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 16; i++) {
       this.update(String.fromCharCode(65 + i) as ColumnName, sheetData[i]);
     }
   }
@@ -60,6 +62,7 @@ export class Book {
       this.comments || '',
       creationTimeNow ? now : String(this.createdTimestamp),
       updateTimeNow ? now : String(this.updatedTimestamp),
+      fromBoolean(this.starred || false),
     ];
   }
 
@@ -132,6 +135,9 @@ export class Book {
       case ColumnName.UPDATED_TIMESTAMP:
         this.updatedTimestamp = Number(value);
         break;
+      case ColumnName.STARRED:
+        this.starred = parseBoolean(value);
+        break;
     }
     return this;
   }
@@ -156,6 +162,7 @@ export enum SortBy {
   CREATED = 'Creation Time',
   UPDATED = 'Last Updated',
   DATE_READ = 'Date Read',
+  STARRED = 'Starred',
 }
 
 export interface Sort {
@@ -165,6 +172,7 @@ export interface Sort {
 
 export enum Filter {
   NONE = 'None',
+  STARRED = 'Starred',
   WANT_TO_READ = 'Want To Read',
   WANT_TO_OWN = 'Want To Own',
 }

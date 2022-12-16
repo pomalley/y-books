@@ -4,6 +4,7 @@
       <q-item
         v-for="book in sortedBooks"
         :key="book.row"
+        v-show="bookIsVisible(book)"
         clickable
         v-ripple
         class="row justify-start"
@@ -11,6 +12,8 @@
       >
         <q-item-section class="col-1 col-md-auto">
           <div class="row">
+            <q-icon name="fas fa-star" v-if="book.starred" />
+            <q-icon name="none" />
             <q-icon :name="readIcon(book)" />
             <q-icon name="none" />
             <q-icon :name="ownIcon(book)" />
@@ -89,24 +92,22 @@ function parseBooks(sheetData: string[][], firstRow: number) {
   return newBooks;
 }
 
+function bookIsVisible(book: Book) {
+  return (
+    // Not hidden, or we're showing hidden books
+    (props.showHidden || !book.hidden) &&
+    // and it's in the filter
+    (props.filter === Filter.NONE ||
+      (props.filter === Filter.WANT_TO_OWN && book.wantToOwn) ||
+      (props.filter == Filter.WANT_TO_READ && book.wantToRead) ||
+      (props.filter === Filter.STARRED && book.starred)) &&
+    // And it matches the search
+    book.matchesSearch(props.searchText)
+  );
+}
+
 const sortedBooks = computed(() => {
-  let filtered = state.books.filter((book) => {
-    if (!props.showHidden && book.hidden) return false;
-    switch (props.filter) {
-      case Filter.WANT_TO_OWN:
-        return book.wantToOwn;
-      case Filter.WANT_TO_READ:
-        return book.wantToRead;
-      case Filter.NONE:
-        return true;
-    }
-  });
-  if (props.searchText) {
-    filtered = filtered.filter((book) => {
-      return book.matchesSearch(props.searchText);
-    });
-  }
-  return filtered.sort((a, b) => {
+  return state.books.slice().sort((a, b) => {
     switch (props.sort.by) {
       case SortBy.UPDATED:
         return a.updatedTimestamp < b.updatedTimestamp != props.sort.desc
@@ -129,6 +130,8 @@ const sortedBooks = computed(() => {
             ? -1
             : 1;
         return a_date < b_date != props.sort.desc ? -1 : 1;
+      case SortBy.STARRED:
+        return !!a.starred == !!b.starred ? 0 : !!a.starred ? -1 : 1;
     }
   });
 });

@@ -2,9 +2,10 @@
   <q-dialog
     ref="dialogRef"
     :model-value="modelValue"
+    :maximized="$q.platform.is.mobile"
     @update:model-value="(value) => emit('update:modelValue', value)"
   >
-    <q-card class="q-dialog-plugin">
+    <q-card class="q-dialog-plugin" style="max-width: 90%; width: 600px">
       <q-card-section horizontal>
         <q-img :src="book.imageUrl" fit="scale-down" class="col-4" />
         <q-card-section class="col-8">
@@ -40,6 +41,7 @@
                 ColumnName.WANT_TO_READ,
                 ColumnName.OWNED,
                 ColumnName.WANT_TO_OWN,
+                ColumnName.STARRED,
               ]"
               :key="colName"
               :name="iconName(colName, book)"
@@ -191,6 +193,9 @@ function iconClick(col: ColumnName) {
       break;
     case ColumnName.WANT_TO_OWN:
       book.wantToOwn = !book.wantToOwn;
+      break;
+    case ColumnName.STARRED:
+      book.starred = !book.starred;
       break;
   }
 }

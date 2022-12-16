@@ -8,7 +8,7 @@
         emit('update:modelValue', { active: value, book: modelValue.book })
     "
   >
-    <q-card class="q-dialog-plugin">
+    <q-card class="q-dialog-plugin" style="max-width: 90%; width: 600px">
       <q-card-section horizontal>
         <q-card-section vertical class="col-4">
           <q-img :src="modelValue.book.imageUrl" fit="scale-down" />
@@ -54,6 +54,7 @@
                 ColumnName.WANT_TO_READ,
                 ColumnName.OWNED,
                 ColumnName.WANT_TO_OWN,
+                ColumnName.STARRED,
               ]"
               :key="colName"
               :name="iconName(colName, modelValue.book)"
@@ -257,6 +258,9 @@ function iconClick(type: ColumnName) {
       break;
     case ColumnName.WANT_TO_OWN:
       newValue = props.modelValue.book.wantToOwn ? 'FALSE' : 'TRUE';
+      break;
+    case ColumnName.STARRED:
+      newValue = props.modelValue.book.starred ? 'FALSE' : 'TRUE';
       break;
     default:
       console.log('Bad iconClick arg: ', type);
