@@ -1,7 +1,7 @@
-runtime: python39
+runtime: python312
 
 handlers:
-  - url: /python
+  - url: /(token|login|logout|auth|set_sheet_id)
     script: auto
   # Serve all static files with urls ending with a file extension
   - url: /(.*\..+)$

@@ -93,6 +93,7 @@
             color="accent"
             @click="newBookActive = true"
             class="full-width"
+            :loading="!initialLoadDone"
           />
         </q-item>
         <q-item>
@@ -101,6 +102,7 @@
             @click="handleAuthClick"
             color="warning"
             class="full-width"
+            :loading="!initialLoadDone"
           >
             Sign In / Authorize
           </q-btn>
@@ -109,6 +111,7 @@
             @click="handleSignoutClick"
             color="secondary"
             class="full-width"
+            :loading="!initialLoadDone"
           >
             Sign Out
           </q-btn>
@@ -120,14 +123,20 @@
             color="primary"
             target="_blank"
             :href="`https://docs.google.com/spreadsheets/d/${sheetId}`"
-            :enabled="signedIn && sheetId"
+            :loading="!initialLoadDone"
+            :disable="!(signedIn && sheetId)"
           >
             Open Spreadsheet
           </q-btn>
         </q-item>
         <q-item>
-          <q-btn class="full-width" color="primary" @click="changeSpreadsheet">
-            Change Spreadsheet
+          <q-btn
+            class="full-width"
+            color="primary"
+            @click="changeSpreadsheet"
+            :loading="!initialLoadDone"
+          >
+            {{ sheetId.length > 0 ? 'Change' : 'Choose' }} Spreadsheet
           </q-btn>
         </q-item>
         <q-item>
@@ -137,7 +146,6 @@
     </q-drawer>
 
     <q-page-container>
-      <div v-if="gapiError">{{ gapiError }}</div>
       <router-view
         :sheet-id="sheetId"
         :sheet-data="sheetData"
@@ -145,6 +153,7 @@
         :filter="filter"
         :searchText="searchText"
         :showHidden="showHidden"
+        :initialLoadDone="initialLoadDone"
       />
     </q-page-container>
 
@@ -164,17 +173,27 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted, nextTick, watch } from 'vue';
-import { API_KEY, CLIENT_ID } from 'src/keys';
+import { reactive, ref, onMounted, watch } from 'vue';
 import { Book, Filter, Sort, SortBy } from 'src/components/models';
 import NewBook from 'components/NewBook.vue';
 import GBookSelector from 'src/components/GBookSelector.vue';
 import { fetchGoogleBooksJson } from 'src/components/googleBooks';
 import { useQuasar } from 'quasar';
+import {
+  gsiLoaded,
+  gapiLoaded,
+  callWithAuth,
+  showPicker,
+  TOKEN,
+  logout,
+  login,
+  getSheetId,
+  setSheetId,
+} from 'src/components/googleAuth';
 
 const leftDrawerOpen = ref(false);
+const initialLoadDone = ref(false);
 const signedIn = ref(false);
-const gapiError = ref('Not Signed In');
 const sheetId = ref('');
 const sheetData = ref<string[][]>([]);
 const sort: Sort = reactive({ by: SortBy.CREATED, desc: true });
@@ -189,28 +208,15 @@ const showHidden = ref(false);
 const darkMode = ref(false);
 const $q = useQuasar();
 
-let pickerLoaded = false;
-let apiKey = API_KEY;
-let clientId = CLIENT_ID;
-let gisClient: google.accounts.oauth2.TokenClient | null = null;
-
-// Array of API discovery doc URLs for APIs used by the quickstart
-const DISCOVERY_DOCS = [
-  'https://sheets.googleapis.com/$discovery/rest?version=v4',
-];
-
-// Authorization scopes required by the API; multiple scopes can be
-// included, separated by spaces.
-// Add https://www.googleapis.com/auth/drive.readonly to be able to show
-// thumbnails in the picker, at the cost of a much more expansive
-// set of permissions.
-const SCOPES = 'https://www.googleapis.com/auth/drive.file';
-
 const SUBSHEET = 'Books';
 
 watch(darkMode, (newDarkMode: boolean) => {
   $q.dark.set(newDarkMode);
   localStorage.darkMode = Boolean(newDarkMode);
+});
+
+watch(TOKEN, (n) => {
+  signedIn.value = n;
 });
 
 function toggleLeftDrawer() {
@@ -221,27 +227,23 @@ async function saveNewBook(book: Book) {
   savingNewBook.value = true;
   const values: string[][] = [book.ToSpreadsheetRow(true, true)];
   try {
-    await gapi.client.sheets.spreadsheets.values.append({
-      spreadsheetId: sheetId.value,
-      range: SUBSHEET,
-      valueInputOption: 'USER_ENTERED',
-      resource: {
-        values: values,
-      },
-    });
-    const temp = sheetId.value;
-    sheetId.value = '';
-    await nextTick(() => (sheetId.value = temp));
+    await callWithAuth(async () =>
+      gapi.client.sheets.spreadsheets.values.append({
+        spreadsheetId: sheetId.value,
+        range: SUBSHEET,
+        valueInputOption: 'USER_ENTERED',
+        resource: {
+          values: values,
+        },
+      })
+    );
+    await refreshSheet(sheetId.value);
   } catch (e) {
     console.error('Failed to save book:', e);
   } finally {
     savingNewBook.value = false;
     newBookActive.value = false;
   }
-}
-
-function changeSpreadsheet() {
-  createPicker();
 }
 
 async function searchExternal() {
@@ -263,155 +265,64 @@ onMounted(() => {
   }
   var gapiscript = document.createElement('script');
   gapiscript.setAttribute('src', 'https://apis.google.com/js/api.js');
-  gapiscript.onload = () => handleClientLoad();
+  gapiscript.onload = () => gapiLoaded();
   gapiscript.async = false;
   document.head.appendChild(gapiscript);
   var gisScript = document.createElement('script');
   gisScript.setAttribute('src', 'https://accounts.google.com/gsi/client');
-  gisScript.onload = () => initClient();
+  gisScript.onload = () => gsiLoaded();
   gisScript.async = false;
   document.head.appendChild(gisScript);
-});
 
-let gapiLoadOk: (v?: unknown) => void, gapiLoadFail: (reason?: unknown) => void;
-const gapiLoadPromise = new Promise((resolve, reject) => {
-  gapiLoadOk = resolve;
-  gapiLoadFail = reject;
-});
-
-watch(sheetId, async (newSheetId: string) => {
-  await gapiLoadPromise;
-  gapi.client.sheets.spreadsheets.values
-    .get({
-      spreadsheetId: newSheetId,
-      range: 'Books!A2:P',
-    })
-    .then(function (response) {
-      var range = response.result;
-      if (range.values !== undefined) {
-        sheetData.value = range.values as string[][];
-      } else {
-        console.error('no sheet data found');
-        sheetData.value = [];
+  getSheetId()
+    .then((value: string | undefined) => {
+      if (value) {
+        sheetId.value = value;
       }
     })
     .catch((err) => {
-      updateSigninStatus(false);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (err.result.error.code == 401 || err.result.error.code == 403) {
-        gisClient?.requestAccessToken();
-      } else {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        // state.error = String(response.result.error.message);
-        console.error(err);
-        sheetId.value = '';
-      }
+      console.log(err);
+    })
+    .finally(() => {
+      initialLoadDone.value = true;
     });
 });
 
-async function handleClientLoad() {
-  try {
-    await new Promise((resolve, reject) =>
-      gapi.load('client:picker', { callback: resolve, onerror: reject })
-    );
-    pickerLoaded = true;
-    await gapi.client.init({ discoveryDocs: DISCOVERY_DOCS });
-    gapiLoadOk();
-  } catch (e) {
-    gapiLoadFail();
-  }
-}
+watch(sheetId, async (newSheetId: string) => {
+  await refreshSheet(newSheetId);
+});
 
-async function initClient() {
-  if (process.env.DEV) {
-    const module = await import('src/dev_keys');
-    apiKey = module.API_KEY;
-    clientId = module.CLIENT_ID;
-    console.log('Using dev keys.');
-  }
-  await gapiLoadPromise;
-  await new Promise<void>((resolve, reject) => {
-    try {
-      gisClient = google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
-        scope: SCOPES,
-        prompt: 'consent',
-        callback: (response) => {
-          if (response.error) {
-            console.error('Failed to get OAuth token:', response);
-            localStorage.oauthToken = undefined;
-            updateSigninStatus(false);
-          } else {
-            localStorage.oauthToken = response.access_token;
-            updateSigninStatus(true);
-          }
-        },
-      });
-      resolve();
-    } catch (error) {
-      console.error('Failure initializing token client:', error);
-      gapiError.value = 'Failed to init gapi';
-      reject(error);
+async function refreshSheet(sheetId: string) {
+  await callWithAuth(async () => {
+    let sheetsResponse = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: sheetId,
+      range: 'Books!A2:P',
+    });
+    let range = sheetsResponse.result;
+    if (range.values !== undefined) {
+      sheetData.value = range.values as string[][];
+    } else {
+      console.error('no sheet data found');
+      sheetData.value = [];
     }
   });
-  if (localStorage.oauthToken) {
-    gapi.client.setToken({ access_token: String(localStorage.oauthToken) });
-    updateSigninStatus(true);
-  } else {
-    updateSigninStatus(false);
-  }
 }
 
-function createPicker() {
-  if (pickerLoaded && localStorage.oauthToken) {
-    var view = new google.picker.DocsView(google.picker.ViewId.DOCS);
-    var picker = new google.picker.PickerBuilder()
-      .enableFeature(google.picker.Feature.MINE_ONLY)
-      .addViewGroup(
-        new google.picker.ViewGroup(google.picker.ViewId.SPREADSHEETS)
-      )
-      .setAppId(clientId)
-      .setOAuthToken(String(localStorage.oauthToken))
-      .addView(view)
-      .addView(new google.picker.DocsUploadView())
-      .setDeveloperKey(apiKey)
-      .setCallback(pickerCallback)
-      .build();
-    picker.setVisible(true);
-  }
-}
-
-function pickerCallback(data: google.picker.ResponseObject) {
+async function changeSpreadsheet() {
+  const data = await showPicker();
   if (data.action == google.picker.Action.PICKED) {
     var fileId: string = data.docs[0].id;
     sheetId.value = fileId;
-    localStorage.sheetId = fileId;
+    void setSheetId(fileId);
   }
 }
 
-function updateSigninStatus(isSignedIn: boolean) {
-  signedIn.value = isSignedIn;
-  if (isSignedIn) {
-    if (localStorage.sheetId) {
-      sheetId.value = String(localStorage.sheetId);
-      gapiError.value = '';
-    } else {
-      gapiError.value = 'No Sheet Selected';
-    }
-  } else {
-    sheetId.value = '';
-    gapiError.value = 'Not Signed In';
-  }
+async function handleAuthClick() {
+  await login();
 }
 
-function handleAuthClick() {
-  gisClient?.requestAccessToken();
-}
-
-function handleSignoutClick() {
-  google.accounts.oauth2.revoke(String(localStorage.oauthToken), () => {
-    updateSigninStatus(false);
-    localStorage.oauthToken = undefined;
-  });
+async function handleSignoutClick() {
+  await logout();
+  sheetData.value = [];
 }
 </script>

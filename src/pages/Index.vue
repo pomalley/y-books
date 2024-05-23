@@ -29,6 +29,15 @@
       </q-item>
     </q-list>
     <book-card v-model="state.bookCardModel" :sheet-id="props.sheetId" />
+    <h4 class="q-mx-sm" v-if="initialLoadDone && !(sheetId.length > 0)">
+      Please select a sheet to use.
+    </h4>
+    <q-spinner
+      color="primary"
+      class="q-ma-xl"
+      size="xl"
+      v-if="!initialLoadDone"
+    />
   </q-page>
 </template>
 
@@ -54,6 +63,7 @@ const props = defineProps<{
   filter: Filter;
   searchText: string;
   showHidden: boolean;
+  initialLoadDone: boolean;
 }>();
 
 // First book in state.books (index 0) has row number ROW_OFFSET in the sheet.

@@ -35,6 +35,8 @@ yarn-error.log*
 # secrets
 src/keys.ts
 src/dev_keys.ts
+client_secret.json
+flask_secret.txt
 
 # Python
 /venv

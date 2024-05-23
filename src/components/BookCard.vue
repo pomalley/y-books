@@ -149,6 +149,7 @@ import EditStringCardSection from 'components/EditStringCardSection.vue';
 import { googleBooksLink, fetchGoogleBooksJson } from './googleBooks';
 import { useQuasar } from 'quasar';
 import GBookSelector from './GBookSelector.vue';
+import { callWithAuth } from './googleAuth';
 
 const $q = useQuasar();
 
@@ -214,33 +215,33 @@ function updateText(col: ColumnName, value: string) {
 
 function updateCell(row: number, col: ColumnName, value: string) {
   updating[col] = true;
-  gapi.client.sheets.spreadsheets.values
-    .update({
+  callWithAuth(() =>
+    gapi.client.sheets.spreadsheets.values.update({
       spreadsheetId: props.sheetId,
       range: `${String(col)}${row}`,
       resource: { values: [[value]] },
       valueInputOption: 'USER_ENTERED',
     })
-    .then(
-      () => {
-        const newModel = { ...props.modelValue };
-        newModel.book.update(col, value);
-        emit('update:modelValue', newModel);
-        updating[col] = false;
-        // set updated timestamp as well (but only once).
-        if (col != ColumnName.UPDATED_TIMESTAMP) {
-          updateCell(
-            row,
-            ColumnName.UPDATED_TIMESTAMP,
-            String(Math.round(Date.now() / 1000))
-          );
-        }
-      },
-      (response) => {
-        console.log('Update failed: ', response);
-        updating[col] = false;
+  ).then(
+    () => {
+      const newModel = { ...props.modelValue };
+      newModel.book.update(col, value);
+      emit('update:modelValue', newModel);
+      updating[col] = false;
+      // set updated timestamp as well (but only once).
+      if (col != ColumnName.UPDATED_TIMESTAMP) {
+        updateCell(
+          row,
+          ColumnName.UPDATED_TIMESTAMP,
+          String(Math.round(Date.now() / 1000))
+        );
       }
-    );
+    },
+    (response) => {
+      console.log('Update failed: ', response);
+      updating[col] = false;
+    }
+  );
 }
 
 function iconClick(type: ColumnName) {
