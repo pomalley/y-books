@@ -12,6 +12,7 @@
       >
         <q-item-section class="col-1 col-md-auto">
           <div class="row">
+            <q-icon name="fas fa-pen-nib" v-if="book.public" />
             <q-icon name="fas fa-star" v-if="book.starred" />
             <q-icon name="none" />
             <q-icon :name="readIcon(book)" />

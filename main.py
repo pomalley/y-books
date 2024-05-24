@@ -1,14 +1,8 @@
-from typing import Literal
-
 from flask import Flask, request, abort, send_file, send_from_directory, session
 import google_auth_oauthlib
-from google.oauth2 import id_token
-from google.auth.transport import requests as grequests
-from google.cloud import firestore
-import json
-import requests
 
-db = firestore.Client()
+import server.datastore as ds
+from server.auth import verify_jwt
 
 app = Flask(__name__)
 
@@ -21,81 +15,31 @@ SCOPES = [
 with open('flask_secret.txt') as f:
   app.secret_key = f.read()
 
-with open('client_secret.json') as f:
-  CLIENT_SECRET = json.load(f)['web']
 
-
-def _get_token(userid: str,
-               type: Literal['auth', 'refresh'] = 'auth') -> str | None:
-  doc = db.collection("users").document(userid).get()
-  if not doc.exists:
-    return None
-  key = 'refresh_token' if type == 'refresh' else 'token'
-  d = doc.to_dict()
-  return d.get(key, None) if d else None
-
-
-def _store_tokens(userid: str, token: str, refresh_token: str):
-  db.collection("users").document(userid).set(
-      {
-          'token': token,
-          'refresh_token': refresh_token
-      }, merge=True)
-
-
-def _clear_tokens(userid: str):
-  doc_ref = db.collection("users").document(userid)
-  doc_ref.update({
-      'token': firestore.DELETE_FIELD,
-      'refresh_token': firestore.DELETE_FIELD
-  })
-
-
-def _refresh_token(userid: str, refresh_token: str):
-  if (refresh_token is None):
-    _clear_tokens(userid)
-    return None
-  r = requests.post(CLIENT_SECRET['token_uri'],
-                    data={
-                        'client_id': CLIENT_SECRET['client_id'],
-                        'client_secret': CLIENT_SECRET['client_secret'],
-                        'grant_type': 'refresh_token',
-                        'refresh_token': refresh_token
-                    })
-  if (r.status_code != 200):
-    _clear_tokens(userid)
-    return None
-  response = r.json()
-  _store_tokens(userid, response['access_token'], refresh_token)
-
-
-def _get_sheet_id(userid: str) -> str | None:
-  doc = db.collection("users").document(userid).get()
-  if not doc.exists:
-    return None
-  d = doc.to_dict()
-  return d.get('sheet_id', None) if d else None
-
-
-def _store_sheet_id(userid: str, sheet_id: str):
-  doc = db.collection("users").document(userid).set({'sheet_id': sheet_id},
-                                                    merge=True)
+def _all_params(userid: str):
+  return {
+      'token': ds.get_token(userid),
+      'sheet_id': ds.get_param(userid, 'sheet_id'),
+      'external_path': ds.get_param(userid, 'external_path')
+  }
 
 
 @app.route("/token")
 def token():
   '''Get the auth token (and sheet id), if present.'''
+  if request.headers.get('X-Requested-With') != 'XmlHttpRequest':
+    abort(400, 'Invalid X-Requested-With')
   if 'userid' not in session:
     abort(401)
   if request.args.get('refresh', ''):
-    refresh_token = _get_token(session['userid'], type='refresh')
+    refresh_token = ds.get_token(session['userid'], type='refresh')
     if not refresh_token:
       abort(403)
-    _refresh_token(session['userid'], refresh_token=refresh_token)
-  t = _get_token(session['userid'])
+    ds.refresh_token(session['userid'], refresh_token=refresh_token)
+  t = ds.get_token(session['userid'])
   if not t:
     abort(403)
-  return {'token': t, 'sheet_id': _get_sheet_id(session['userid'])}
+  return _all_params(session['userid'])
 
 
 @app.route("/logout")
@@ -108,17 +52,14 @@ def logout():
 @app.route("/login", methods=['POST'])
 def login():
   '''Verify JWT oauth2 credential, and return auth token if we have it.'''
+  if request.headers.get('X-Requested-With') != 'XmlHttpRequest':
+    abort(400, 'Invalid X-Requested-With')
   if not request.is_json:
     abort(400, 'JWT required as json.')
   try:
-    token = request.json['credential']  # type: ignore
-    idinfo = id_token.verify_oauth2_token(token, grequests.Request(),
-                                          CLIENT_SECRET['client_id'])
+    idinfo = verify_jwt(request.json['credential'])  # type: ignore
     session['userid'] = idinfo['sub']
-    t = _get_token(session['userid'])
-    if t:
-      return {'token': t, 'sheet_id': _get_sheet_id(session['userid'])}
-    return {}
+    return _all_params(session['userid'])
   except (ValueError, TypeError, AttributeError) as e:
     abort(401, 'Google sign-in failed.')
 
@@ -144,25 +85,27 @@ def auth():
       'client_secret': flow.credentials.client_secret,
       'scopes': flow.credentials.scopes
   }
-  _store_tokens(session['userid'], c['token'], c['refresh_token'])
-  return c
+  ds.store_tokens(session['userid'], c['token'], c['refresh_token'])
+  return _all_params(session['userid'])
 
 
-@app.route("/set_sheet_id", methods=["POST"])
-def set_sheet_id():
+@app.route("/set/<param>", methods=["POST"])
+def set_sheet_id(param: str):
   '''Set the sheet id for this user (in the datastore).'''
   if request.headers.get('X-Requested-With') != 'XmlHttpRequest':
     abort(400, 'Invalid X-Requested-With')
   if 'userid' not in session:
     abort(401, 'Not signed in.')
+  if param not in ('sheet_id', 'external_path'):
+    abort(400, 'Invalid param.')
   j = request.json
   if not j:
     abort(400, 'No data provided.')
-  sheet_id = j.get('sheet_id', None)
-  if not sheet_id:
-    abort(400, 'No sheet provided.')
-  _store_sheet_id(session['userid'], sheet_id=str(sheet_id))
-  return {}
+  value = j.get('value', None)
+  if not value:
+    abort(400, 'No value provided.')
+  ds.store_param(session['userid'], param=param, value=str(value))
+  return _all_params(session['userid'])
 
 
 @app.route('/')

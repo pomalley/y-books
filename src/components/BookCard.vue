@@ -55,6 +55,7 @@
                 ColumnName.OWNED,
                 ColumnName.WANT_TO_OWN,
                 ColumnName.STARRED,
+                ColumnName.PUBLIC,
               ]"
               :key="colName"
               :name="iconName(colName, modelValue.book)"
@@ -262,6 +263,9 @@ function iconClick(type: ColumnName) {
       break;
     case ColumnName.STARRED:
       newValue = props.modelValue.book.starred ? 'FALSE' : 'TRUE';
+      break;
+    case ColumnName.PUBLIC:
+      newValue = props.modelValue.book.public ? 'FALSE' : 'TRUE';
       break;
     default:
       console.log('Bad iconClick arg: ', type);

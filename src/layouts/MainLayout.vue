@@ -140,6 +140,16 @@
           </q-btn>
         </q-item>
         <q-item>
+          <q-btn
+            class="full-width"
+            color="primary"
+            @click="changeExternalPath"
+            :loading="!initialLoadDone"
+          >
+            {{ externalPath.length > 0 ? 'Change' : 'Set' }} External Path
+          </q-btn>
+        </q-item>
+        <q-item>
           <div id="googleSignIn"></div>
         </q-item>
       </q-list>
@@ -187,13 +197,15 @@ import {
   TOKEN,
   logout,
   login,
-  getSheetId,
+  getParams,
   setSheetId,
+  setExternalPath,
 } from 'src/components/googleAuth';
 
 const leftDrawerOpen = ref(false);
 const initialLoadDone = ref(false);
 const signedIn = ref(false);
+const externalPath = ref('');
 const sheetId = ref('');
 const sheetData = ref<string[][]>([]);
 const sort: Sort = reactive({ by: SortBy.CREATED, desc: true });
@@ -274,10 +286,13 @@ onMounted(() => {
   gisScript.async = false;
   document.head.appendChild(gisScript);
 
-  getSheetId()
-    .then((value: string | undefined) => {
-      if (value) {
-        sheetId.value = value;
+  getParams()
+    .then((value) => {
+      if (value.sheet_id && value.sheet_id.length > 0) {
+        sheetId.value = value.sheet_id;
+      }
+      if (value.external_path && value.external_path.length > 0) {
+        externalPath.value = value.external_path;
       }
     })
     .catch((err) => {
@@ -296,7 +311,7 @@ async function refreshSheet(sheetId: string) {
   await callWithAuth(async () => {
     let sheetsResponse = await gapi.client.sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: 'Books!A2:P',
+      range: 'Books!A2:Q',
     });
     let range = sheetsResponse.result;
     if (range.values !== undefined) {
@@ -315,6 +330,22 @@ async function changeSpreadsheet() {
     sheetId.value = fileId;
     void setSheetId(fileId);
   }
+}
+
+function changeExternalPath() {
+  $q.dialog({
+    title: 'Set External Path',
+    prompt: {
+      model: externalPath.value,
+    },
+    cancel: true,
+  }).onOk((value: string) => {
+    void setExternalPath(value).then((resp: { external_path?: string }) => {
+      if (resp.external_path) {
+        externalPath.value = resp.external_path;
+      }
+    });
+  });
 }
 
 async function handleAuthClick() {

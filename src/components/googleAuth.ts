@@ -28,12 +28,12 @@ const gapiPromise = new Promise((resolve) => {
 
 // Call on gsi script loaded to init Google auth.
 export async function gsiLoaded() {
-  if (process.env.DEV) {
-    const module = await import('src/dev_keys');
-    _API_KEY = module.API_KEY;
-    _CLIENT_ID = module.CLIENT_ID;
-    console.log('Using dev keys.');
-  }
+  // if (process.env.DEV) {
+  const module = await import('src/dev_keys');
+  _API_KEY = module.API_KEY;
+  _CLIENT_ID = module.CLIENT_ID;
+  console.log('Using dev keys.');
+  // }
   // init google sign-in.
   google.accounts.id.initialize({
     client_id: _CLIENT_ID,
@@ -100,7 +100,7 @@ export async function callWithAuth<T>(
   if (!TOKEN.value) {
     let path = '/token';
     if (shouldRefreshToken) path += '?refresh=1';
-    const tokenResponse = await fetch(path);
+    const tokenResponse = await fetchWithHeaders(path);
     if (tokenResponse.ok) {
       const jsonResponse = (await tokenResponse.json()) as { token: string };
       gapi.client.setToken({ access_token: jsonResponse.token });
@@ -182,53 +182,44 @@ export async function login() {
 }
 
 export async function logout() {
-  return fetch('/logout').then(() => {
+  return fetchWithHeaders('/logout').then(() => {
     TOKEN.value = false;
   });
 }
 
-export async function getSheetId() {
+export async function getParams() {
   return callWithAuth(async () => {
-    return fetch('/token')
-      .then((getResponse) => {
-        if (getResponse.status !== 200) {
-          throw getResponse.statusText;
-        }
-        return getResponse.json();
-      })
-      .then((j: { sheet_id?: string }) => j.sheet_id);
+    const getResponse = await fetchWithHeaders('/token');
+    if (getResponse.status !== 200) throw getResponse.statusText;
+    return getResponse.json() as { sheet_id?: string; external_path?: string };
   });
 }
 
 export async function setSheetId(sheet_id: string) {
   return callWithAuth(async () => {
-    return fetch('/set_sheet_id', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XmlHttpRequest',
-      },
-      body: JSON.stringify({ sheet_id: sheet_id }),
-    });
+    return (
+      await fetchWithHeaders('/set/sheet_id', { value: sheet_id })
+    ).json();
+  });
+}
+
+export async function setExternalPath(external_path: string) {
+  return callWithAuth(async () => {
+    return (
+      await fetchWithHeaders('/set/external_path', { value: external_path })
+    ).json();
   });
 }
 
 async function forceTokenRefresh() {
   TOKEN.value = false;
   return callWithAuth(async () => {
-    return fetch('/token');
+    return fetchWithHeaders('/token');
   }, true);
 }
 
 function loginCallback(googleSignInResponse: unknown) {
-  fetch('/login', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Requested-With': 'XmlHttpRequest',
-    },
-    body: JSON.stringify(googleSignInResponse),
-  })
+  fetchWithHeaders('/login', googleSignInResponse)
     .then((loginResponse) => loginResponse.json())
     .then((j: { token?: string }) => {
       if (j.token) {
@@ -241,4 +232,16 @@ function loginCallback(googleSignInResponse: unknown) {
       console.log('Error with Google sign-in.');
       throw reason;
     });
+}
+
+function fetchWithHeaders(path: string, body?: unknown) {
+  return fetch(path, {
+    // This is ugly, but whatever.
+    method: path.startsWith('/token') ? 'GET' : 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XmlHttpRequest',
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
 }

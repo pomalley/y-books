@@ -16,6 +16,7 @@ export enum ColumnName {
   CREATED_TIMESTAMP = 'N',
   UPDATED_TIMESTAMP = 'O',
   STARRED = 'P',
+  PUBLIC = 'Q',
 }
 
 export class Book {
@@ -36,10 +37,11 @@ export class Book {
   createdTimestamp!: number;
   updatedTimestamp!: number;
   starred?: boolean;
+  public?: boolean;
 
   constructor(row: number, sheetData: string[]) {
     this.row = row;
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 17; i++) {
       this.update(String.fromCharCode(65 + i) as ColumnName, sheetData[i]);
     }
   }
@@ -63,6 +65,7 @@ export class Book {
       creationTimeNow ? now : String(this.createdTimestamp),
       updateTimeNow ? now : String(this.updatedTimestamp),
       fromBoolean(this.starred || false),
+      fromBoolean(this.public || false),
     ];
   }
 
@@ -137,6 +140,9 @@ export class Book {
         break;
       case ColumnName.STARRED:
         this.starred = parseBoolean(value);
+        break;
+      case ColumnName.PUBLIC:
+        this.public = parseBoolean(value);
         break;
     }
     return this;
