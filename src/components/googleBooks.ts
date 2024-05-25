@@ -1,6 +1,6 @@
 // Functions for fetching data from Google Books.
 
-import { Book, ColumnName } from './models';
+import { Book, getCol } from './models';
 
 export function googleBooksLink(id: string) {
   return `http://books.google.com/books?id=${id}&source=gbs_api`;
@@ -41,18 +41,18 @@ function convertGoogleBooksData(googleData: GoogleBook) {
     return maybeArr ? maybeArr.join(';') : '';
   };
   return new Book(-1, [])
-    .update(ColumnName.TITLE, googleData.volumeInfo.title)
-    .update(ColumnName.AUTHORS, maybeJoin(googleData.volumeInfo.authors))
-    .update(ColumnName.GENRES, maybeJoin(googleData.volumeInfo.categories))
-    .update(ColumnName.GOOGLE_BOOKS_ID, googleData.id)
+    .update(getCol('TITLE'), googleData.volumeInfo.title)
+    .update(getCol('AUTHORS'), maybeJoin(googleData.volumeInfo.authors))
+    .update(getCol('GENRES'), maybeJoin(googleData.volumeInfo.categories))
+    .update(getCol('GOOGLE_BOOKS_ID'), googleData.id)
     .update(
-      ColumnName.IMAGE_URL,
+      getCol('IMAGE_URL'),
       googleData.volumeInfo.imageLinks
         ? googleData.volumeInfo.imageLinks.thumbnail
         : ''
     )
     .update(
-      ColumnName.YEAR,
+      getCol('YEAR'),
       googleData.volumeInfo.publishedDate
         ? googleData.volumeInfo.publishedDate.split('-')[0]
         : ''

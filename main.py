@@ -1,16 +1,11 @@
-from flask import Flask, request, abort, send_file, send_from_directory, session
+from flask import Flask, jsonify, request, abort, send_file, send_from_directory, session
 import google_auth_oauthlib
 
+from server.auth import verify_jwt, SCOPES
 import server.datastore as ds
-from server.auth import verify_jwt
+import server.sheets as sheets
 
 app = Flask(__name__)
-
-SCOPES = [
-    'https://www.googleapis.com/auth/drive.file',
-    'https://www.googleapis.com/auth/userinfo.email',
-    'https://www.googleapis.com/auth/userinfo.profile', 'openid'
-]
 
 with open('flask_secret.txt') as f:
   app.secret_key = f.read()
@@ -108,9 +103,27 @@ def set_sheet_id(param: str):
   return _all_params(session['userid'])
 
 
+@app.route("/update")
+def update():
+  sheet_ids = ds.get_all_sheets()
+  for userid, sheet_id, _external_path in sheet_ids:
+    books = sheets.get_public_books(sheet_id=sheet_id, userid=userid)
+    ds.update_public_books(userid, books)
+  return {}
+
+
+@app.route("/pub/<external_path>")
+def pub(external_path: str):
+  response = jsonify(ds.get_public_books(external_path))
+  # response.headers.add('Access-Control-Allow-Origin', '*')  # enable for dev
+  return response
+
+
 @app.route('/')
-def root():
+@app.route('/p/<external_path>')
+def root(external_path=None):
   '''Serve dist/spa/index.html as root. Only used in the dev environment.'''
+  del external_path
   return send_file('dist/spa/index.html')
 
 

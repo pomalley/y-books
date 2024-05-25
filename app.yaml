@@ -1,13 +1,13 @@
 runtime: python312
 
 handlers:
-  - url: /(token|login|logout|auth|set_sheet_id)
+  - url: /(token|login|logout|auth|set_sheet_id|update|pub/.*|set/.*)
     script: auto
   # Serve all static files with urls ending with a file extension
   - url: /(.*\..+)$
     static_files: dist/spa/\1
     upload: dist/spa/(.*\..+)$
-    # catch all handler to index.html
+  # catch all handler to index.html
   - url: /.*
     static_files: dist/spa/index.html
     upload: dist/spa/index.html

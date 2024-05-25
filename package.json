@@ -25,11 +25,13 @@
     "@types/gapi.client.sheets": "^4.0.20201029",
     "@types/google.accounts": "^0.0.2",
     "@types/google.picker": "^0.0.39",
+    "@types/markdown-it": "^14.1.1",
     "@typescript-eslint/eslint-plugin": "^5.10.0",
     "@typescript-eslint/parser": "^5.10.0",
     "eslint": "^7.14.0",
     "eslint-config-prettier": "^8.1.0",
     "eslint-plugin-vue": "^7.0.0",
+    "markdown-it": "^14.1.0",
     "prettier": "^2.5.1"
   },
   "browserslist": [

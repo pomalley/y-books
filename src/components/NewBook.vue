@@ -11,10 +11,10 @@
         <q-card-section class="col-8">
           <q-card-section
             v-for="col in [
-              ColumnName.TITLE,
-              ColumnName.AUTHORS,
-              ColumnName.GENRES,
-              ColumnName.YEAR,
+              getCol('TITLE'),
+              getCol('AUTHORS'),
+              getCol('GENRES'),
+              getCol('YEAR'),
             ]"
             :key="col"
           >
@@ -37,11 +37,11 @@
           <q-card-section>
             <q-icon
               v-for="colName in [
-                ColumnName.READ,
-                ColumnName.WANT_TO_READ,
-                ColumnName.OWNED,
-                ColumnName.WANT_TO_OWN,
-                ColumnName.STARRED,
+                getCol('READ'),
+                getCol('WANT_TO_READ'),
+                getCol('OWNED'),
+                getCol('WANT_TO_OWN'),
+                getCol('STARRED'),
               ]"
               :key="colName"
               :name="iconName(colName, book)"
@@ -98,7 +98,7 @@
 
 <script setup lang="ts">
 import { reactive, ref, watch } from 'vue';
-import { Book, ColumnName } from './models';
+import { Book, getCol, getName } from './models';
 import { iconName, iconTooltip } from './icons';
 import { fetchGoogleBooksJson, googleBooksLink } from './googleBooks';
 import { useQuasar } from 'quasar';
@@ -118,7 +118,7 @@ let gBookSelectorActive = ref(false);
 let gBookResults = ref<Book[]>([]);
 
 const book: Book = reactive(
-  new Book(-1, []).update(ColumnName.WANT_TO_READ, 'TRUE')
+  new Book(-1, []).update(getCol('WANT_TO_READ'), 'TRUE')
 );
 
 watch(
@@ -135,66 +135,66 @@ function selectBook(newBook: Book) {
   gBookSelectorActive.value = false;
 }
 
-function fieldDisplayText(col: ColumnName): string {
-  switch (col) {
-    case ColumnName.TITLE:
+function fieldDisplayText(col: string): string {
+  switch (getName(col)) {
+    case 'TITLE':
       return book.title || '[no title]';
-    case ColumnName.AUTHORS:
+    case 'AUTHORS':
       return book.authors || '[no authors]';
-    case ColumnName.GENRES:
+    case 'GENRES':
       return book.genres || '[no genres]';
-    case ColumnName.YEAR:
+    case 'YEAR':
       return book.year ? String(book.year) : '[no year]';
   }
   return 'uh oh';
 }
 
-function fieldModelValue(col: ColumnName) {
-  switch (col) {
-    case ColumnName.TITLE:
+function fieldModelValue(col: string) {
+  switch (getName(col)) {
+    case 'TITLE':
       return book.title;
-    case ColumnName.AUTHORS:
+    case 'AUTHORS':
       return book.authors;
-    case ColumnName.GENRES:
+    case 'GENRES':
       return book.genres;
-    case ColumnName.YEAR:
+    case 'YEAR':
       return book.year ? String(book.year) : '';
   }
   return 'uh oh';
 }
 
-function fieldSetValue(col: ColumnName, val: string) {
-  switch (col) {
-    case ColumnName.TITLE:
+function fieldSetValue(col: string, val: string) {
+  switch (getName(col)) {
+    case 'TITLE':
       book.title = val;
       break;
-    case ColumnName.AUTHORS:
+    case 'AUTHORS':
       book.authors = val;
       break;
-    case ColumnName.GENRES:
+    case 'GENRES':
       book.genres = val;
       break;
-    case ColumnName.YEAR:
+    case 'YEAR':
       book.year = Number(val) || undefined;
       break;
   }
 }
 
-function iconClick(col: ColumnName) {
-  switch (col) {
-    case ColumnName.READ:
+function iconClick(col: string) {
+  switch (getName(col)) {
+    case 'READ':
       book.read = !book.read;
       break;
-    case ColumnName.WANT_TO_READ:
+    case 'WANT_TO_READ':
       book.wantToRead = !book.wantToRead;
       break;
-    case ColumnName.OWNED:
+    case 'OWNED':
       book.owned = !book.owned;
       break;
-    case ColumnName.WANT_TO_OWN:
+    case 'WANT_TO_OWN':
       book.wantToOwn = !book.wantToOwn;
       break;
-    case ColumnName.STARRED:
+    case 'STARRED':
       book.starred = !book.starred;
       break;
   }

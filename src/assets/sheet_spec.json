@@ -1,0 +1,23 @@
+{
+  "subsheet": "Books",
+  "range": "Books!A2:Q",
+  "columns": {
+    "TITLE": "A",
+    "AUTHORS": "B",
+    "YEAR": "C",
+    "GENRES": "D",
+    "WANT_TO_READ": "E",
+    "READ": "F",
+    "WANT_TO_OWN": "G",
+    "OWNED": "H",
+    "IMAGE_URL": "I",
+    "DATE_READ": "J",
+    "GOOGLE_BOOKS_ID": "K",
+    "HIDDEN": "L",
+    "COMMENTS": "M",
+    "CREATED_TIMESTAMP": "N",
+    "UPDATED_TIMESTAMP": "O",
+    "STARRED": "P",
+    "PUBLIC": "Q"
+  }
+}

@@ -15,65 +15,65 @@
         </q-card-section>
         <q-card-section class="col-8">
           <edit-string-card-section
-            :updating="updating[ColumnName.TITLE]"
+            :updating="updating[getCol('TITLE')]"
             :text="modelValue.book.title || ''"
-            @edit="(value) => updateText(ColumnName.TITLE, value)"
+            @edit="(value) => updateText(getCol('TITLE'), value)"
             empty-text="[no title]"
           />
           <edit-string-card-section
-            :updating="updating[ColumnName.AUTHORS]"
+            :updating="updating[getCol('AUTHORS')]"
             :text="modelValue.book.authors || ''"
-            @edit="(value) => updateText(ColumnName.AUTHORS, value)"
+            @edit="(value) => updateText(getCol('AUTHORS'), value)"
             empty-text="[no authors]"
           />
           <edit-string-card-section
             year
-            :updating="updating[ColumnName.YEAR]"
+            :updating="updating[getCol('YEAR')]"
             :text="String(modelValue.book.year)"
-            @edit="(value) => updateText(ColumnName.YEAR, value)"
+            @edit="(value) => updateText(getCol('YEAR'), value)"
             empty-text="[no year]"
           />
           <edit-string-card-section
-            :updating="updating[ColumnName.GENRES]"
+            :updating="updating[getCol('GENRES')]"
             :text="modelValue.book.genres || ''"
-            @edit="(value) => updateText(ColumnName.GENRES, value)"
+            @edit="(value) => updateText(getCol('GENRES'), value)"
             empty-text="no genres"
           />
           <edit-string-card-section
             year-month
-            :updating="updating[ColumnName.DATE_READ]"
+            :updating="updating[getCol('DATE_READ')]"
             :text="modelValue.book.dateRead || ''"
-            @edit="(value) => updateText(ColumnName.DATE_READ, value)"
+            @edit="(value) => updateText(getCol('DATE_READ'), value)"
             :display-text="formattedDateRead()"
             empty-text="[no date read]"
           />
           <q-card-section>
             <q-icon
-              v-for="colName in [
-                ColumnName.READ,
-                ColumnName.WANT_TO_READ,
-                ColumnName.OWNED,
-                ColumnName.WANT_TO_OWN,
-                ColumnName.STARRED,
-                ColumnName.PUBLIC,
+              v-for="col in [
+                getCol('READ'),
+                getCol('WANT_TO_READ'),
+                getCol('OWNED'),
+                getCol('WANT_TO_OWN'),
+                getCol('STARRED'),
+                getCol('PUBLIC'),
               ]"
-              :key="colName"
-              :name="iconName(colName, modelValue.book)"
+              :key="col"
+              :name="iconName(col, modelValue.book)"
               size="md"
-              @click="iconClick(colName)"
+              @click="iconClick(col)"
               class="q-px-sm cursor-pointer"
-              :class="{ disabled: updating[colName] }"
+              :class="{ disabled: updating[col] }"
             >
               <q-tooltip class="text-body2">{{
-                iconTooltip(colName, modelValue.book)
+                iconTooltip(col, modelValue.book)
               }}</q-tooltip>
             </q-icon>
           </q-card-section>
           <q-separator inset />
           <edit-string-card-section
-            :updating="updating[ColumnName.COMMENTS]"
+            :updating="updating[getCol('COMMENTS')]"
             :text="modelValue.book.comments || ''"
-            @edit="(value) => updateText(ColumnName.COMMENTS, value)"
+            @edit="(value) => updateText(getCol('COMMENTS'), value)"
             empty-text="[no comment]"
           />
         </q-card-section>
@@ -144,7 +144,7 @@
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
-import { BookCardModel, ColumnName, Book } from 'components/models';
+import { BookCardModel, COL_TO_NAME, Book, getCol } from 'components/models';
 import { iconName, iconTooltip } from './icons';
 import EditStringCardSection from 'components/EditStringCardSection.vue';
 import { googleBooksLink, fetchGoogleBooksJson } from './googleBooks';
@@ -175,7 +175,7 @@ function hide() {
     if (props.modelValue.book.row) {
       updateCell(
         props.modelValue.book.row,
-        ColumnName.HIDDEN,
+        getCol('HIDDEN'),
         hidden ? 'FALSE' : 'TRUE'
       );
     }
@@ -209,12 +209,12 @@ function selectGoogleBook(newBook: Book) {
   gBookSelectorActive.value = false;
 }
 
-function updateText(col: ColumnName, value: string) {
+function updateText(col: string, value: string) {
   if (!props.modelValue.book.row) return;
   updateCell(props.modelValue.book.row, col, value);
 }
 
-function updateCell(row: number, col: ColumnName, value: string) {
+function updateCell(row: number, col: string, value: string) {
   updating[col] = true;
   callWithAuth(() =>
     gapi.client.sheets.spreadsheets.values.update({
@@ -230,10 +230,11 @@ function updateCell(row: number, col: ColumnName, value: string) {
       emit('update:modelValue', newModel);
       updating[col] = false;
       // set updated timestamp as well (but only once).
-      if (col != ColumnName.UPDATED_TIMESTAMP) {
+      if (COL_TO_NAME.get(col) != 'UPDATED_TIMESTAMP') {
         updateCell(
           row,
-          ColumnName.UPDATED_TIMESTAMP,
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          getCol('UPDATED_TIMESTAMP'),
           String(Math.round(Date.now() / 1000))
         );
       }
@@ -245,34 +246,34 @@ function updateCell(row: number, col: ColumnName, value: string) {
   );
 }
 
-function iconClick(type: ColumnName) {
+function iconClick(col: string) {
   if (!props.modelValue.book.row) return;
   let newValue = '';
-  switch (type) {
-    case ColumnName.READ:
+  switch (COL_TO_NAME.get(col)) {
+    case 'READ':
       newValue = props.modelValue.book.read ? 'FALSE' : 'TRUE';
       break;
-    case ColumnName.WANT_TO_READ:
+    case 'WANT_TO_READ':
       newValue = props.modelValue.book.wantToRead ? 'FALSE' : 'TRUE';
       break;
-    case ColumnName.OWNED:
+    case 'OWNED':
       newValue = props.modelValue.book.owned ? 'FALSE' : 'TRUE';
       break;
-    case ColumnName.WANT_TO_OWN:
+    case 'WANT_TO_OWN':
       newValue = props.modelValue.book.wantToOwn ? 'FALSE' : 'TRUE';
       break;
-    case ColumnName.STARRED:
+    case 'STARRED':
       newValue = props.modelValue.book.starred ? 'FALSE' : 'TRUE';
       break;
-    case ColumnName.PUBLIC:
+    case 'PUBLIC':
       newValue = props.modelValue.book.public ? 'FALSE' : 'TRUE';
       break;
     default:
-      console.log('Bad iconClick arg: ', type);
+      console.log('Bad iconClick arg: ', col);
       return;
   }
-  updating[type] = true;
-  updateCell(props.modelValue.book.row, type, newValue);
+  updating[col] = true;
+  updateCell(props.modelValue.book.row, col, newValue);
 }
 
 function displayTimestamp(timestamp?: number): string {

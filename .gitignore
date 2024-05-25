@@ -40,3 +40,4 @@ flask_secret.txt
 
 # Python
 /venv
+server/__pycache__

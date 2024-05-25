@@ -28,12 +28,12 @@ const gapiPromise = new Promise((resolve) => {
 
 // Call on gsi script loaded to init Google auth.
 export async function gsiLoaded() {
-  // if (process.env.DEV) {
-  const module = await import('src/dev_keys');
-  _API_KEY = module.API_KEY;
-  _CLIENT_ID = module.CLIENT_ID;
-  console.log('Using dev keys.');
-  // }
+  if (process.env.DEV) {
+    const module = await import('src/dev_keys');
+    _API_KEY = module.API_KEY;
+    _CLIENT_ID = module.CLIENT_ID;
+    console.log('Using dev keys.');
+  }
   // init google sign-in.
   google.accounts.id.initialize({
     client_id: _CLIENT_ID,
@@ -234,10 +234,11 @@ function loginCallback(googleSignInResponse: unknown) {
     });
 }
 
-function fetchWithHeaders(path: string, body?: unknown) {
+export function fetchWithHeaders(path: string, body?: unknown) {
+  // This is ugly, but whatever.
+  const gets = /^\/(token|pub)/;
   return fetch(path, {
-    // This is ugly, but whatever.
-    method: path.startsWith('/token') ? 'GET' : 'POST',
+    method: gets.test(path) ? 'GET' : 'POST',
     headers: {
       'Content-Type': 'application/json',
       'X-Requested-With': 'XmlHttpRequest',

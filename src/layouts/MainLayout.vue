@@ -189,6 +189,7 @@ import NewBook from 'components/NewBook.vue';
 import GBookSelector from 'src/components/GBookSelector.vue';
 import { fetchGoogleBooksJson } from 'src/components/googleBooks';
 import { useQuasar } from 'quasar';
+import sheet_spec from 'assets/sheet_spec.json';
 import {
   gsiLoaded,
   gapiLoaded,
@@ -220,8 +221,6 @@ const showHidden = ref(false);
 const darkMode = ref(false);
 const $q = useQuasar();
 
-const SUBSHEET = 'Books';
-
 watch(darkMode, (newDarkMode: boolean) => {
   $q.dark.set(newDarkMode);
   localStorage.darkMode = Boolean(newDarkMode);
@@ -242,7 +241,7 @@ async function saveNewBook(book: Book) {
     await callWithAuth(async () =>
       gapi.client.sheets.spreadsheets.values.append({
         spreadsheetId: sheetId.value,
-        range: SUBSHEET,
+        range: sheet_spec.subsheet,
         valueInputOption: 'USER_ENTERED',
         resource: {
           values: values,
@@ -311,7 +310,7 @@ async function refreshSheet(sheetId: string) {
   await callWithAuth(async () => {
     let sheetsResponse = await gapi.client.sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: 'Books!A2:Q',
+      range: sheet_spec.range,
     });
     let range = sheetsResponse.result;
     if (range.values !== undefined) {

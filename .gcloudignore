@@ -18,3 +18,6 @@ node_modules/
 
 # Dev secrets
 src/dev_keys.ts
+
+# python
+server/__pycache__
