@@ -10,8 +10,9 @@
       <q-spinner color="primary" class="q-ma-xl" size="xl" v-if="loading" />
       <public-book
         v-for="book in data"
-        :key="book.google_books_id"
+        :key="book.id"
         :book="(book as BookInterface)"
+        :rootPath="`/p/${route.params['external_path']}`"
       />
     </q-page-container>
   </q-layout>
@@ -30,7 +31,7 @@ const $q = useQuasar();
 const route = useRoute();
 const errorMessage = ref('');
 const loading = ref(true);
-const data = ref([] as Record<string, string>[]);
+const data = ref([] as Record<string, number | string>[]);
 
 watch(darkMode, (newDarkMode: boolean) => {
   $q.dark.set(newDarkMode);
@@ -45,6 +46,8 @@ onMounted(async () => {
 
   const p = route.params['external_path'] as string;
   try {
+    // For local development, set CORS header in main.py, use plain `fetch`,
+    // and add Flask server path (http://localhost:8080)
     const response = await fetchWithHeaders(`/pub/${p}`);
     if (response.status !== 200) {
       throw p + ': ' + response.status.toString() + ' ' + response.statusText;

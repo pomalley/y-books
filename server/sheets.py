@@ -23,6 +23,7 @@ def _get(l: List[str], name: str) -> str:
 
 @dataclass
 class BookEntry:
+  id: int
   title: str
   authors: str
   year: str
@@ -31,7 +32,8 @@ class BookEntry:
   comments: str
   date_read: str
 
-  def __init__(self, row: List[str]):
+  def __init__(self, id: int, row: List[str]):
+    self.id = id
     self.title = _get(row, 'TITLE')
     self.authors = _get(row, 'AUTHORS')
     self.year = _get(row, 'YEAR')
@@ -46,8 +48,9 @@ class BookEntry:
         f'{("Read: " + self.date_read + ".") if self.date_read else "Not read."}'
     )
 
-  def to_dict(self) -> Dict[str, str]:
+  def to_dict(self) -> Dict[str, int | str]:
     return {
+        'id': self.id,
         'title': self.title,
         'authors': self.authors,
         'year': self.year,
@@ -65,7 +68,7 @@ def get_public_books(sheet_id: str, userid: str) -> List[BookEntry]:
   sheet = service.spreadsheets()
   result = sheet.values().get(spreadsheetId=sheet_id,
                               range=SHEET_SPEC['range']).execute()
-  for row in result.get('values', []):
+  for i, row in enumerate(result.get('values', [])):
     if _get(row, 'PUBLIC') == 'TRUE':
-      d.append(BookEntry(row))
+      d.append(BookEntry(i, row))
   return d
