@@ -8,7 +8,7 @@
         emit('update:modelValue', { active: value, book: modelValue.book })
     "
   >
-    <q-card class="q-dialog-plugin" style="max-width: 90%; width: 600px">
+    <q-card class="q-dialog-plugin" style="max-width: 90%; width: 75em">
       <q-card-section horizontal>
         <q-card-section vertical class="col-4">
           <q-img :src="modelValue.book.imageUrl" fit="scale-down" />
@@ -70,7 +70,7 @@
             </q-icon>
           </q-card-section>
           <q-separator inset />
-          <edit-string-card-section
+          <comment-text-area
             :updating="updating[getCol('COMMENTS')]"
             :text="modelValue.book.comments || ''"
             @edit="(value) => updateText(getCol('COMMENTS'), value)"
@@ -146,6 +146,7 @@
 import { reactive, ref } from 'vue';
 import { BookCardModel, COL_TO_NAME, Book, getCol } from 'components/models';
 import { iconName, iconTooltip } from './icons';
+import CommentTextArea from 'components/CommentTextArea.vue';
 import EditStringCardSection from 'components/EditStringCardSection.vue';
 import { googleBooksLink, fetchGoogleBooksJson } from './googleBooks';
 import { useQuasar } from 'quasar';
