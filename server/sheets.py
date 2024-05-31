@@ -4,7 +4,7 @@ from typing import Dict, List
 
 from googleapiclient.discovery import build
 
-from . import auth
+from server import auth
 
 with open('src/assets/sheet_spec.json') as f:
   SHEET_SPEC = json.load(f)

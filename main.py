@@ -4,6 +4,7 @@ import google_auth_oauthlib
 from server.auth import verify_jwt, SCOPES
 import server.datastore as ds
 import server.sheets as sheets
+import server.public as public
 
 app = Flask(__name__)
 
@@ -18,6 +19,8 @@ def _all_params(userid: str):
       'external_path': ds.get_param(userid, 'external_path')
   }
 
+
+_PUBLIC_PATH_ROOT = 'pub'
 
 # Enable in dev mode.
 # @app.after_request
@@ -116,18 +119,18 @@ def set_sheet_id(param: str):
 
 @app.route("/update")
 def update():
+  public.clear_all_public_books(_PUBLIC_PATH_ROOT)
   sheet_ids = ds.get_all_sheets()
   for userid, sheet_id, _external_path in sheet_ids:
     books = sheets.get_public_books(sheet_id=sheet_id, userid=userid)
-    ds.update_public_books(userid, books)
+    public.write_public_books(_PUBLIC_PATH_ROOT, _external_path, books)
   return {}
 
 
 @app.route("/pub/<external_path>")
 def pub(external_path: str):
-  response = jsonify(ds.get_public_books(external_path))
-  # response.headers.add('Access-Control-Allow-Origin', '*')  # enable for dev
-  return response
+  '''Serve public books json. Only used in the dev environment.'''
+  return send_from_directory('pub', external_path)
 
 
 @app.route('/')

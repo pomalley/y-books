@@ -21,3 +21,6 @@ src/dev_keys.ts
 
 # python
 server/__pycache__
+
+# Generated files
+/pub

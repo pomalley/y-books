@@ -48,7 +48,7 @@ onMounted(async () => {
   try {
     // For local development, set CORS header in main.py, use plain `fetch`,
     // and add Flask server path (http://localhost:8080)
-    const response = await fetchWithHeaders(`/pub/${p}`);
+    const response = await fetchWithHeaders(`/pub/${p}.json`);
     if (response.status !== 200) {
       throw p + ': ' + response.status.toString() + ' ' + response.statusText;
     }

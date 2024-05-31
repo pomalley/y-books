@@ -75,27 +75,6 @@ def get_all_sheets() -> List[Tuple[str, str, str]]:
   return d
 
 
-def update_public_books(userid: str, books: List[sheets.BookEntry]):
-  doc_ref = db.collection(_USERS_COLLECTION).document(userid)
-  doc = doc_ref.get()
-  d = doc.to_dict() if doc.exists else None
-  if not d:
-    return
-
-  # start by deleting all the old docs
-  col_ref = doc_ref.collection(_PUBLIC_COLLECTION)
-  for doc in col_ref.list_documents():
-    doc.delete()
-
-  # if we don't have an external path, don't re-add
-  if not d.get('external_path', None):
-    return
-
-  # add all the public books
-  for book in books:
-    col_ref.document(book.google_books_id).set(book.to_dict())
-
-
 def get_public_books(external_path: str) -> List[Dict[str, str]]:
   r = []
   for doc in db.collection(_USERS_COLLECTION).where(
