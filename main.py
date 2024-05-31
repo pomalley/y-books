@@ -20,7 +20,7 @@ def _all_params(userid: str):
   }
 
 
-_PUBLIC_PATH_ROOT = 'pub'
+_PUBLIC_BUCKET = 'y-books-public'
 
 # Enable in dev mode.
 # @app.after_request
@@ -119,11 +119,11 @@ def set_sheet_id(param: str):
 
 @app.route("/update")
 def update():
-  public.clear_all_public_books(_PUBLIC_PATH_ROOT)
+  public.clear_all_public_books(_PUBLIC_BUCKET)
   sheet_ids = ds.get_all_sheets()
   for userid, sheet_id, _external_path in sheet_ids:
     books = sheets.get_public_books(sheet_id=sheet_id, userid=userid)
-    public.write_public_books(_PUBLIC_PATH_ROOT, _external_path, books)
+    public.write_public_books(_PUBLIC_BUCKET, _external_path, books)
   return {}
 
 

@@ -23,7 +23,6 @@ import { ref, onMounted, watch, computed } from 'vue';
 
 import { useQuasar } from 'quasar';
 import { useRoute } from 'vue-router';
-import { fetchWithHeaders } from 'src/components/googleAuth';
 import PublicBook, { BookInterface } from 'components/PublicBook.vue';
 
 const darkMode = ref(true);
@@ -48,7 +47,9 @@ onMounted(async () => {
   try {
     // For local development, set CORS header in main.py, use plain `fetch`,
     // and add Flask server path (http://localhost:8080)
-    const response = await fetchWithHeaders(`/pub/${p}.json`);
+    const response = await fetch(
+      `https://y-books-public.storage.googleapis.com/${p}.json`
+    );
     if (response.status !== 200) {
       throw p + ': ' + response.status.toString() + ' ' + response.statusText;
     }
