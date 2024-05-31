@@ -1,20 +1,20 @@
 <template>
   <q-card :id="book.id">
-    <q-card-section horizontal>
-      <q-card-section vertical>
-        <q-card-section>
+    <div class="col">
+      <div class="row q-pa-md items-center">
+        <div class="col-xs-6 col-md-1">
           <q-img :src="book.image_url" />
-        </q-card-section>
-        <q-card-section class="info">
-          <div>{{ book.authors }}</div>
+        </div>
+        <div class="info col-xs-12 col-md-auto">
+          <div class="q-ma-sm">{{ book.authors }}</div>
           <div>
-            <span class="title">{{ book.title }}</span> ({{ book.year }})
+            <span class="title q-ma-sm">{{ book.title }}</span> ({{
+              book.year
+            }})
           </div>
-          <div class="read" v-if="book.date_read">
+          <div class="read q-ma-sm" v-if="book.date_read">
             Read {{ readText(book.date_read) }}
           </div>
-        </q-card-section>
-        <q-card-actions>
           <q-btn
             color="primary"
             :href="googleBooksLink(book.google_books_id)"
@@ -31,16 +31,15 @@
           >
             <q-icon size="xs" name="fas fa-link" />
           </q-btn>
-        </q-card-actions>
-      </q-card-section>
-      <q-card-section vertical>
-        <q-card-section
+        </div>
+      </div>
+      <div class="row q-pa-md">
+        <div
           class="text-justify comment"
           v-html="md.render(book.comments)"
-        >
-        </q-card-section>
-      </q-card-section>
-    </q-card-section>
+        ></div>
+      </div>
+    </div>
   </q-card>
 </template>
 
@@ -97,7 +96,7 @@ const MONTHS = [
   'Jan',
   'Feb',
   'Mar',
-  'Aor',
+  'Apr',
   'May',
   'Jun',
   'Jul',

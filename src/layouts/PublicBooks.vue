@@ -1,15 +1,15 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
+  <q-layout view="hHh lpR fFf">
+    <q-footer elevated>
       <q-toolbar>
         <q-toolbar-title> {{ route.params['external_path'] }} </q-toolbar-title>
       </q-toolbar>
-    </q-header>
+    </q-footer>
 
     <q-page-container>
       <q-spinner color="primary" class="q-ma-xl" size="xl" v-if="loading" />
       <public-book
-        v-for="book in data"
+        v-for="book in sortedBooks"
         :key="book.id"
         :book="(book as BookInterface)"
         :rootPath="`/p/${route.params['external_path']}`"
@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 
 import { useQuasar } from 'quasar';
 import { useRoute } from 'vue-router';
@@ -59,5 +59,11 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+});
+
+const sortedBooks = computed(() => {
+  return data.value
+    .slice()
+    .sort((a, b) => (a.date_read > b.date_read ? -1 : 1));
 });
 </script>
