@@ -99,10 +99,7 @@
           :disable="!modelValue.book.title"
           color="accent"
           target="_blank"
-          :href="
-            'https://find.minlib.net/iii/encore/search/C__S' +
-            modelValue.book.title
-          "
+          :href="`https://catalog.minlib.net/Union/Search?view=list&lookfor=${modelValue.book.title}&searchIndex=Keyword&searchSource=local`"
         >
           Minlib Search
           <q-tooltip v-if="!modelValue.book.title">requires title</q-tooltip>
