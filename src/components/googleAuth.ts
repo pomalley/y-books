@@ -236,7 +236,7 @@ function loginCallback(googleSignInResponse: unknown) {
 
 export function fetchWithHeaders(path: string, body?: unknown) {
   // This is ugly, but whatever.
-  const gets = /^\/(token|pub)/;
+  const gets = /\/(token$|pub\/|update)/;
   return fetch(path, {
     method: gets.test(path) ? 'GET' : 'POST',
     headers: {

@@ -127,6 +127,11 @@
             :disable="!(signedIn && sheetId)"
           >
             Open Spreadsheet
+            <q-icon
+              size="xs"
+              name="fas fa-up-right-from-square"
+              class="q-mx-xs"
+            />
           </q-btn>
         </q-item>
         <q-item>
@@ -139,6 +144,7 @@
             {{ sheetId.length > 0 ? 'Change' : 'Choose' }} Spreadsheet
           </q-btn>
         </q-item>
+        <q-separator inset />
         <q-item>
           <q-btn
             class="full-width"
@@ -146,7 +152,33 @@
             @click="changeExternalPath"
             :loading="!initialLoadDone"
           >
-            {{ externalPath.length > 0 ? 'Change' : 'Set' }} External Path
+            {{ externalPath.length > 0 ? 'Change' : 'Set' }} Public Path
+          </q-btn>
+        </q-item>
+        <q-item>
+          <q-btn
+            class="full-width"
+            color="primary"
+            :href="`/p/${externalPath}`"
+            :loading="!initialLoadDone"
+            :disable="!(externalPath.length > 0)"
+          >
+            Public View
+            <q-icon
+              size="xs"
+              name="fas fa-up-right-from-square"
+              class="q-mx-xs"
+            />
+          </q-btn>
+        </q-item>
+        <q-item>
+          <q-btn
+            class="full-width"
+            color="primary"
+            :loading="!initialLoadDone || updatingPublicBooks"
+            @click="updatePublicBooks"
+          >
+            Update Public View
           </q-btn>
         </q-item>
         <q-item>
@@ -201,10 +233,12 @@ import {
   getParams,
   setSheetId,
   setExternalPath,
+  fetchWithHeaders,
 } from 'src/components/googleAuth';
 
 const leftDrawerOpen = ref(false);
 const initialLoadDone = ref(false);
+const updatingPublicBooks = ref(false);
 const signedIn = ref(false);
 const externalPath = ref('');
 const sheetId = ref('');
@@ -345,6 +379,20 @@ function changeExternalPath() {
       }
     });
   });
+}
+
+async function updatePublicBooks() {
+  updatingPublicBooks.value = true;
+  try {
+    const resp = await fetchWithHeaders('/update');
+    if (resp.status !== 200) {
+      console.error(resp.statusText);
+    } else {
+      console.log('Update successful.');
+    }
+  } finally {
+    updatingPublicBooks.value = false;
+  }
 }
 
 async function handleAuthClick() {

@@ -2,7 +2,7 @@
   <q-card :id="book.id">
     <div class="col">
       <div class="row q-pa-md items-center">
-        <div class="col-xs-6 col-md-1">
+        <div class="col-xs-6 col-md-1 q-mx-sm">
           <q-img :src="book.image_url" />
         </div>
         <div class="info col-xs-12 col-md-auto">
@@ -16,12 +16,13 @@
             Read {{ readText(book.date_read) }}
           </div>
           <q-btn
+            outline
             color="primary"
             :href="googleBooksLink(book.google_books_id)"
             target="_blank"
             class="q-mx-xs"
           >
-            Google Books
+            <q-icon size="xs" name="fab fa-google" />
           </q-btn>
           <q-btn
             outline

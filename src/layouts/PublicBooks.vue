@@ -2,6 +2,9 @@
   <q-layout view="hHh lpR fFf">
     <q-footer elevated>
       <q-toolbar>
+        <q-btn color="accent" @click="sortDesc = !sortDesc">
+          <q-icon size="xs" :name="sortIcon" />
+        </q-btn>
         <q-toolbar-title> {{ route.params['external_path'] }} </q-toolbar-title>
       </q-toolbar>
     </q-footer>
@@ -31,6 +34,7 @@ const route = useRoute();
 const errorMessage = ref('');
 const loading = ref(true);
 const data = ref([] as Record<string, number | string>[]);
+const sortDesc = ref(true);
 
 watch(darkMode, (newDarkMode: boolean) => {
   $q.dark.set(newDarkMode);
@@ -65,6 +69,10 @@ onMounted(async () => {
 const sortedBooks = computed(() => {
   return data.value
     .slice()
-    .sort((a, b) => (a.date_read > b.date_read ? -1 : 1));
+    .sort((a, b) => (a.date_read > b.date_read === sortDesc.value ? -1 : 1));
+});
+
+const sortIcon = computed(() => {
+  return sortDesc.value ? 'fas fa-arrow-down-1-9' : 'fas fa-arrow-up-9-1';
 });
 </script>
