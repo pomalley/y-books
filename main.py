@@ -127,12 +127,6 @@ def update():
   return {}
 
 
-@app.route("/pub/<external_path>")
-def pub(external_path: str):
-  '''Serve public books json. Only used in the dev environment.'''
-  return send_from_directory('pub', external_path)
-
-
 @app.route('/')
 @app.route('/p/<external_path>')
 def root(external_path=None):
