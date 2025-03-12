@@ -47,7 +47,7 @@ def token():
     ds.refresh_token(session['userid'], refresh_token=refresh_token)
   t = ds.get_token(session['userid'])
   if not t:
-    abort(403)
+    abort(403, "No token found for user.")
   return _all_params(session['userid'])
 
 
@@ -70,7 +70,7 @@ def login():
     session['userid'] = idinfo['sub']
     return _all_params(session['userid'])
   except (ValueError, TypeError, AttributeError) as e:
-    abort(401, 'Google sign-in failed.')
+    abort(401, f'Google sign-in failed: {e}')
 
 
 @app.route("/auth", methods=['POST'])
@@ -79,7 +79,7 @@ def auth():
   if request.headers.get('X-Requested-With') != 'XmlHttpRequest':
     abort(400, 'Invalid X-Requested-With')
   if 'userid' not in session:
-    abort(401, 'Cannot authorize without authentication.')
+    abort(401, 'Cannot authorize without authentication. User ID not found in session.')
   flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(  # type: ignore
       'client_secret.json',
       scopes=SCOPES,
@@ -106,13 +106,13 @@ def set_sheet_id(param: str):
   if 'userid' not in session:
     abort(401, 'Not signed in.')
   if param not in ('sheet_id', 'external_path'):
-    abort(400, 'Invalid param.')
+    abort(400, f'Invalid param: {param}.')
   j = request.json
   if not j:
-    abort(400, 'No data provided.')
+    abort(400, 'No data provided in request.')
   value = j.get('value', None)
   if not value:
-    abort(400, 'No value provided.')
+    abort(400, 'No value provided in request.')
   ds.store_param(session['userid'], param=param, value=str(value))
   return _all_params(session['userid'])
 
@@ -122,8 +122,12 @@ def update():
   public.clear_all_public_books(_PUBLIC_BUCKET)
   sheet_ids = ds.get_all_sheets()
   for userid, sheet_id, _external_path in sheet_ids:
-    books = sheets.get_public_books(sheet_id=sheet_id, userid=userid)
-    public.write_public_books(_PUBLIC_BUCKET, _external_path, books)
+    try:
+      books = sheets.get_public_books(sheet_id=sheet_id, userid=userid)
+      public.write_public_books(_PUBLIC_BUCKET, _external_path, books)
+    except Exception as e:
+      print(f"Error: {e}")
+      abort(500, f"Error updating public books: {e}")
   return {}
 
 

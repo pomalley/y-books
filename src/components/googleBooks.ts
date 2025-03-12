@@ -69,7 +69,7 @@ function fetchJson(url: string, json?: object) {
           // TODO: if this is a login page, redirect to it.
           resolve(JSON.parse(httpRequest.responseText));
         } else {
-          reject(httpRequest.responseText);
+          reject(`Request failed with status: ${httpRequest.status}: ${httpRequest.responseText}`);
         }
       }
     };
