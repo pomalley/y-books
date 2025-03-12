@@ -64,11 +64,16 @@ class BookEntry:
 def get_public_books(sheet_id: str, userid: str) -> List[BookEntry]:
   d = []
   creds = auth.get_credentials(userid)
-  service = build("sheets", "v4", credentials=creds)
-  sheet = service.spreadsheets()
-  result = sheet.values().get(spreadsheetId=sheet_id,
-                              range=SHEET_SPEC['range']).execute()
-  for i, row in enumerate(result.get('values', [])):
-    if _get(row, 'PUBLIC') == 'TRUE':
-      d.append(BookEntry(i, row))
+  if not creds:
+    raise Exception("Could not get credentials.")
+  try:
+    service = build("sheets", "v4", credentials=creds)
+    sheet = service.spreadsheets()
+    result = sheet.values().get(spreadsheetId=sheet_id,
+                                range=SHEET_SPEC['range']).execute()
+    for i, row in enumerate(result.get('values', [])):
+      if _get(row, 'PUBLIC') == 'TRUE':
+        d.append(BookEntry(i, row))
+  except Exception as e:
+    raise Exception(f"Error while getting public books: {e}")
   return d
