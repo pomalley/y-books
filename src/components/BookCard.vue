@@ -277,7 +277,9 @@ function iconClick(col: string) {
 function displayTimestamp(timestamp?: number): string {
   if (!timestamp) return '';
   const date = new Date(timestamp * 1000);
-  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+  const month = date.getMonth() + 1;
+  const monthStr = month < 10 ? `0${month}` : String(month);
+  return `${date.getFullYear()}-${monthStr}-${date.getDate()}`;
 }
 
 function formattedDateRead(): string {
